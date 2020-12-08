@@ -160,7 +160,7 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             
         # near-ground portion, with drag
         while sediment_location[h, 2] < 4 and sediment_location[h, 2] > scallop_elevation[h] and not OOB_FLAG:        #while that particle is in transport in the water
-            
+            t += dt
             # get current indices -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
                 
@@ -179,29 +179,26 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
-            t += dt
             
             # projected next 
             next_x_idx = np.int(np.rint((pi_x/0.05)))
-            
-            
+                        
             if next_x_idx > x0.size:
-                print('left domain in lower xone!')
-                #pdb.jump(82)    # GOTO 82? Which 82?
+                print('out of bounds in lower zone!')
                 break
             
-            h+=1
-            print('h',h)
-            if h >= x0.size:
-                break
             
             print ('next_x', next_x_idx)
             if pi_z <= scallop_elevation[next_x_idx]:
-                impact_idx = h 
-                impact_data[i] = sediment_location[impact_idx]
+                impact_data[i] = sediment_location[h+1]
                 print('impact!')
                 break
-    
+            
+            h+=1
+                
+            print('h',h)
+            if h >= x0.size:
+                break
                             
             if pi_z <= 5:
                 z_idx = np.int(np.rint((pi_z/0.05)))
