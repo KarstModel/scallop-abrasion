@@ -9,7 +9,8 @@ This is a first crack at a library for scallop abrasion functions
 Based on Jupyter notebooks by Rachel Bosch
 """
 import numpy as np
-import pdb
+from dragcoeff import dragcoeff
+#import pdb
 
 #CFD laminar flow field
 
@@ -111,12 +112,15 @@ def settling_velocity(rho_sediment, rho_fluid, drag_coef, grain_size, fall_dista
     g = 981 # cm*s^-2
     D = grain_size
     C = drag_coef
-    H = fall_distance
     w_s = np.sqrt((4*R*g*D)/(3*C)) 
     
     return w_s
 
-def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D, dx, theta2, drag_coef):
+def particle_reynolds_number(D,urel,V):
+    # Grain diameter, relative velocity (settling-ambient), kinemativc viscosity
+    return 2*D*np.abs(urel)/V
+
+def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D, dx, theta2, mu):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
@@ -124,34 +128,29 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
     g = -981
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     m = np.pi * rho_s * D**3 / 6
-    impact_data = np.empty(shape=(len(x0), 5))  # same column labels as sediment_location, one row per particle
-    k_energy = np.zeros_like(x0)
-    impact_velocity_normal = np.zeros_like(x0)
+    impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
     
     for i in range(len(x0)):    #begin one particle at reast at each x-position at its fall height (Hf per Lamb et al., 2008)
         h = 0
         t = 0
         OOB_FLAG = False
-        impact_idx=[];
-        sediment_location = np.empty(shape=(1, 5))  
-        print(sediment_location)
-        sediment_location = np.append(sediment_location, [[t, x0[i], Hf, 0, 0]], axis = 0)
+        sediment_location = np.zeros(shape=(1, 5))  
+        sediment_location[0, :] = [t, x0[i], Hf, 0, 0]
            #initial position for ith particle, # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w 
         
-        # upper level of fall, ignores drag
+        # upper level of fall, ignores turbulent flow structure
         while sediment_location[h, 2] >= 4:
             h += 1
             t += dt
-            if i+h < x0.size:
+            if i+h < (x0.size - 1):
                 pi_x = x0[i + h]    # new horizontal step location
             else:
-                print(' out of bounds in upper zone' )
+                #print(' out of bounds in upper zone' )
                 OOB_FLAG = True
                 break
                 
             pi_z = (-(Hf/(l_ds)**2)*(pi_x - x0[i])**2) + Hf 
-            ElevIndex = np.rint(pi_z/0.05)
             pi_u = drag * u_w0
             pi_w = -(Hf - pi_z)/t            
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)  
@@ -159,7 +158,7 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             z_idx = np.rint((pi_z/0.05))
             
         # near-ground portion, with drag
-        while sediment_location[h, 2] < 4 and sediment_location[h, 2] > scallop_elevation[h] and not OOB_FLAG:        #while that particle is in transport in the water
+        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] < 4 and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
             t += dt
             # get current indices -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
@@ -169,60 +168,71 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             else:
                 z_idx = 100
             
+            wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
+                                                     
+            Re_p = particle_reynolds_number(D, wrel, mu/rho_w)
+            drag_coef = dragcoeff(Re_p)
+            print('wrel', wrel, 'drag_coef', drag_coef)
             
-            a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)])**2 /(4 * rho_s * D))                 
+            a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))                 
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
             
-            print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_z= ', pi_z)
+            print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
             pi_u = drag * u_water[int(z_idx), int(x_idx)]
             pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
             # projected next 
-            next_x_idx = np.int(np.rint((pi_x/0.05)))
-                        
-            if next_x_idx > x0.size:
-                print('out of bounds in lower zone!')
-                break
-            
-            
+            try:
+                next_x_idx = np.int(np.rint((pi_x/0.05)))
+            except:
+                print('NaN in pi_x')
+                next_x_idx = -9999
+                raise Exception
+                
             print ('next_x', next_x_idx)
-            if pi_z <= scallop_elevation[next_x_idx]:
-                impact_data[i] = sediment_location[h+1]
+            if next_x_idx > (x0.size - 1) or next_x_idx < 0:
+                #print('out of bounds in lower zone!')
+                OOB_FLAG = True
+                break                        
+
+            
+            if pi_z <= scallop_elevation[int(next_x_idx)] and next_x_idx > 0:
+                impact_data[i, :5] = sediment_location[h+1]
                 print('impact!')
                 break
             
-            h+=1
-                
-            print('h',h)
-            if h >= x0.size:
-                break
                             
             if pi_z <= 5:
                 z_idx = np.int(np.rint((pi_z/0.05)))
             else:
                 z_idx = 100
             
-            
+            h+=1
+            print('h',h)
 
             
-
-            
-        # print('impact_idx=', impact_idx, 'impact_data(ith particle)=', impact_data[i]) 
-        
-        theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
-        alpha = np.pi - theta1 - theta2[i]          # angle of impact
-        impact_velocity_normal[i] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
-        
-        if impact_velocity_normal[i] <= 0:           ###this about this condition
-            KE = 0.5 * m * impact_velocity_normal[i]**2
-            k_energy[i] += KE
+    
+        if impact_data[i,3] != 0:
+            theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
         else:
-            k_energy[i] += 0             
+            print('div/0 or other error in theta1')
+            theta1 = 0
             
-    return k_energy, impact_velocity_normal, impact_data
+        alpha = np.pi - theta1 - theta2[i]          # angle of impact
+            
+        impact_data[i, 5] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
+        if impact_data[i, 5] <= 0:          
+            impact_data[i, 6] += 0.5 * m * impact_data[i, 5]**2
+        else:
+            impact_data[i, 6] += 0 
+        
+        #print('impact_data(ith particle)=', impact_data[i]) 
+
+    return impact_data
+       
 
 if __name__ == "__main__":
     print('tests not implemented')
