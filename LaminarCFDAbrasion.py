@@ -498,8 +498,9 @@ axs[2].set_ylabel ('w_i (cm/s)');
 fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
 axs.set_xlim(0, 30)
 axs.plot (x0, z0, 'grey')
-for p in loc_data[:]:
+ld = np.array(loc_data, dtype=object)
+for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
     axs.plot(p[:,1], p[:,2], 2, 'blue')
 axs.set_ylabel('z (cm)')
 axs.set_xlabel('x (cm)')
-axs.set_title('Trajectories of impacting ' + str(D_gravel*10) + ' mm grains on floor scallops, D/L = ' + str(D_gravel/5))
+axs.set_title('Trajectories of randomly selected impacting ' + str(D_gravel*10) + ' mm grains on floor scallops, D/L = ' + str(D_gravel/5))
