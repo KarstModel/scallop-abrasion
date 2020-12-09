@@ -9,7 +9,8 @@ This is a first crack at a library for scallop abrasion functions
 Based on Jupyter notebooks by Rachel Bosch
 """
 import numpy as np
-import pdb
+from dragcoeff import dragcoeff
+#import pdb
 
 #CFD laminar flow field
 
@@ -115,7 +116,11 @@ def settling_velocity(rho_sediment, rho_fluid, drag_coef, grain_size, fall_dista
     
     return w_s
 
-def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D, dx, theta2, drag_coef):
+def particle_reynolds_number(D,urel,V):
+    # Grain diameter, relative velocity (settling-ambient), kinemativc viscosity
+    return 2*D*np.abs(urel)/V
+
+def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D, dx, theta2, mu):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
@@ -141,7 +146,7 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             if i+h < (x0.size - 1):
                 pi_x = x0[i + h]    # new horizontal step location
             else:
-                print(' out of bounds in upper zone' )
+                #print(' out of bounds in upper zone' )
                 OOB_FLAG = True
                 break
                 
@@ -163,22 +168,33 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             else:
                 z_idx = 100
             
+            wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
+                                                     
+            Re_p = particle_reynolds_number(D, wrel, mu/rho_w)
+            drag_coef = dragcoeff(Re_p)
+            print('wrel', wrel, 'drag_coef', drag_coef)
             
-            a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)])**2 /(4 * rho_s * D))                 
+            a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))                 
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
             
-            print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_z= ', pi_z)
+            print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
             pi_u = drag * u_water[int(z_idx), int(x_idx)]
             pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
             # projected next 
-            next_x_idx = np.int(np.rint((pi_x/0.05)))
+            try:
+                next_x_idx = np.int(np.rint((pi_x/0.05)))
+            except:
+                print('NaN in pi_x')
+                next_x_idx = -9999
+                raise Exception
+                
             print ('next_x', next_x_idx)
             if next_x_idx > (x0.size - 1) or next_x_idx < 0:
-                print('out of bounds in lower zone!')
+                #print('out of bounds in lower zone!')
                 OOB_FLAG = True
                 break                        
 
@@ -198,8 +214,13 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             print('h',h)
 
             
+    
+        if impact_data[i,3] != 0:
+            theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
+        else:
+            print('div/0 or other error in theta1')
+            theta1 = 0
             
-        theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
         alpha = np.pi - theta1 - theta2[i]          # angle of impact
             
         impact_data[i, 5] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)

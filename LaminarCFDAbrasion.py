@@ -7,6 +7,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import darthabrader as da
+from dragcoeff import dragcoeff
 
 # ## assumptions
 # 
@@ -16,7 +17,7 @@ import darthabrader as da
 
 # In[2]:
 
-
+plt.close('all')
 
 ##variable declarations
 nx = 101
@@ -447,8 +448,15 @@ Re = 23300
 
 
 u_w0 = (Re * mu_water) / (L * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
+w_w0 = 1
 
-w_s_gravel = da.settling_velocity(rho_quartz, rho_water, drag_coef, D_gravel, Hf_gravel)
+
+
+Re_p = da.particle_reynolds_number(D_gravel, w_w0, mu_water/rho_water)
+drag_coef = dragcoeff(Re_p)
+print('drag_coef', drag_coef)
+
+w_s_gravel = da.settling_velocity(rho_quartz, rho_water, drag_coef, D_gravel, Hf_gravel) # DW 12/8: I think this calculation might assume things no longer true about the settling code
 mass_gravel = np.pi * rho_quartz * D_gravel**3 / 6
 w_s_sand = da.settling_velocity(rho_quartz, rho_water, drag_coef, D_sand, Hf_sand)
 mass_sand = np.pi * rho_quartz * D_sand**3 / 6
@@ -464,7 +472,7 @@ print(w_s_sand)
 print(w_s_gravel)
 
 
-gravel_impact_data = da.sediment_saltation(x0, z0, Hf_gravel, w_water, u_water, u_w0, w_s_gravel, D_gravel, 0.05, theta2, drag_coef)
+gravel_impact_data = da.sediment_saltation(x0, z0, Hf_gravel, w_water, u_water, u_w0, w_s_grain, D_gravel, 0.05, theta2, drag_coef)
 
 fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,22))    
 #axs[0].set_xlim(10, 25)
@@ -472,17 +480,17 @@ axs[0].plot (x0, z0, 'grey')
 axs[0].scatter (gravel_impact_data[:, 1], gravel_impact_data[:, 6]*10**-7)
 axs[0].set_ylabel('KE (Joules)')
 axs[0].set_xlabel('x (cm)')
-axs[0].set_title('Kinetic energy of impacting 60 mm gravel on floor scallops, D/L = 1.2')
+axs[0].set_title('Kinetic energy of impacting ' + str(D_gravel*10) + ' mm gravel on floor scallops, D/L = 1.2')
 #axs[1].set_xlim(10, 25)
 axs[1].plot (x0, z0, 'grey')
 axs[1].scatter(gravel_impact_data[:, 1], gravel_impact_data[:, 2], (gravel_impact_data[:, 6])/10**5)
 axs[1].set_ylabel('z (cm)')
 axs[1].set_xlabel('x (cm)')
-axs[1].set_title('Kinetic energy of impacting 60 mm gravel on floor scallops, dot size scales with energy, D/L = 1.2')
+axs[1].set_title('Kinetic energy of impacting ' + str(D_gravel*10) + ' mm gravel on floor scallops, dot size scales with energy, D/L = 1.2')
 #axs[2].set_xlim(10, 25)
-axs[2].plot (x0, z0, 'grey')
+axs[2].plot (x0, z0*100, 'grey')
 axs[2].scatter (gravel_impact_data[:, 1], gravel_impact_data[:, 5])
-axs[2].set_title ('60 mm Gravel velocity normal to surface at point of impact (cm/s)')
+axs[2].set_title (str(D_gravel*10) + ' mm gravel velocity normal to surface at point of impact (cm/s)')
 axs[2].set_xlabel ('x (cm)')
 axs[2].set_ylabel ('w_i (cm/s)');
 
