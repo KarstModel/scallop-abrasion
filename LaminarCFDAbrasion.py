@@ -503,4 +503,4 @@ for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
     axs.plot(p[:,1], p[:,2], 2, 'blue')
 axs.set_ylabel('z (cm)')
 axs.set_xlabel('x (cm)')
-axs.set_title('Trajectories of randomly selected impacting ' + str(D_gravel*10) + ' mm grains on floor scallops, D/L = ' + str(D_gravel/5))
+axs.set_title('Trajectories of randomly selected ' + str(D_gravel*10) + ' mm grains on floor scallops, D/L = ' + str(D_gravel/5))
