@@ -472,7 +472,7 @@ print(w_s_sand)
 print(w_s_gravel)
 
 
-gravel_impact_data = da.sediment_saltation(x0, z0, Hf_gravel, w_water, u_water, u_w0, w_s_grain, D_gravel, 0.05, theta2, drag_coef)
+gravel_impact_data, loc_data = da.sediment_saltation(x0, z0, Hf_gravel, w_water, u_water, u_w0, w_s_grain, D_gravel, 0.05, theta2, drag_coef)
 
 fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,22))    
 #axs[0].set_xlim(10, 25)
@@ -494,3 +494,13 @@ axs[2].set_title (str(D_gravel*10) + ' mm grains velocity normal to surface at p
 axs[2].set_xlabel ('x (cm)')
 axs[2].set_ylabel ('w_i (cm/s)');
 
+# trajectory figure
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+axs.set_xlim(0, 30)
+axs.plot (x0, z0, 'grey')
+ld = np.array(loc_data, dtype=object)
+for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
+    axs.plot(p[:,1], p[:,2], 2, 'blue')
+axs.set_ylabel('z (cm)')
+axs.set_xlabel('x (cm)')
+axs.set_title('Trajectories of randomly selected ' + str(D_gravel*10) + ' mm grains on floor scallops, D/L = ' + str(D_gravel/5))

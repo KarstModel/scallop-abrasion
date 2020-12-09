@@ -130,6 +130,7 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
     m = np.pi * rho_s * D**3 / 6
     impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
+    location_data = []
     
     for i in range(len(x0)):    #begin one particle at reast at each x-position at its fall height (Hf per Lamb et al., 2008)
         h = 0
@@ -229,9 +230,9 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
         else:
             impact_data[i, 6] += 0 
         
-        #print('impact_data(ith particle)=', impact_data[i]) 
-
-    return impact_data
+        location_data.append(sediment_location)   # store trajectory for plotting
+        
+    return impact_data, location_data
        
 
 if __name__ == "__main__":
