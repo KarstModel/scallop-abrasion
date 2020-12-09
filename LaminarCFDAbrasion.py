@@ -494,3 +494,12 @@ axs[2].set_title (str(D_gravel*10) + ' mm grains velocity normal to surface at p
 axs[2].set_xlabel ('x (cm)')
 axs[2].set_ylabel ('w_i (cm/s)');
 
+# trajectory figure
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+axs.set_xlim(0, 30)
+axs.plot (x0, z0, 'grey')
+for p in loc_data[:]:
+    axs.plot(p[:,1], p[:,2], 2, 'blue')
+axs.set_ylabel('z (cm)')
+axs.set_xlabel('x (cm)')
+axs.set_title('Trajectories of impacting ' + str(D_gravel*10) + ' mm grains on floor scallops, D/L = ' + str(D_gravel/5))
