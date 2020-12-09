@@ -472,7 +472,7 @@ print(w_s_sand)
 print(w_s_gravel)
 
 
-gravel_impact_data = da.sediment_saltation(x0, z0, Hf_gravel, w_water, u_water, u_w0, w_s_grain, D_gravel, 0.05, theta2, drag_coef)
+gravel_impact_data, loc_data = da.sediment_saltation(x0, z0, Hf_gravel, w_water, u_water, u_w0, w_s_grain, D_gravel, 0.05, theta2, drag_coef)
 
 fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,22))    
 #axs[0].set_xlim(10, 25)
