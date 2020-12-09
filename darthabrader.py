@@ -153,7 +153,7 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             z_idx = np.rint((pi_z/0.05))
             
         # near-ground portion, with drag
-        while not OOB_FLAG and sediment_location[h, 2] < 4 and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
+        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] < 4 and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
             t += dt
             # get current indices -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
@@ -176,28 +176,27 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             
             # projected next 
             next_x_idx = np.int(np.rint((pi_x/0.05)))
-                        
-            if next_x_idx > (x0.size - 1):
-                print('out of bounds in lower zone!')
-                break
-            
-            
             print ('next_x', next_x_idx)
+            if next_x_idx > (x0.size - 1) or next_x_idx < 0:
+                print('out of bounds in lower zone!')
+                OOB_FLAG = True
+                break                        
+
+            
             if pi_z <= scallop_elevation[int(next_x_idx)] and next_x_idx > 0:
                 impact_data[i, :5] = sediment_location[h+1]
                 print('impact!')
                 break
             
-            h+=1
-                
-            print('h',h)
-            if h >= x0.size:
-                break
                             
             if pi_z <= 5:
                 z_idx = np.int(np.rint((pi_z/0.05)))
             else:
                 z_idx = 100
+            
+            h+=1
+            print('h',h)
+
             
             
         theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
