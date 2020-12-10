@@ -471,8 +471,11 @@ w_s_grain = da.settling_velocity(rho_quartz, rho_water, drag_coef, D_grain, Hf_g
 print(w_s_sand)
 print(w_s_gravel)
 
+Hf = Hf_gravel
+D = D_gravel
+w_s = w_s_gravel
 
-gravel_impact_data, loc_data = da.sediment_saltation(x0, z0, Hf_gravel, w_water, u_water, u_w0, w_s_grain, D_gravel, 0.05, theta2, drag_coef)
+gravel_impact_data, loc_data = da.sediment_saltation(x0, z0, Hf, w_water, u_water, u_w0, w_s, D, 0.05, theta2, drag_coef)
 
 fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,22))    
 #axs[0].set_xlim(10, 25)
@@ -499,7 +502,7 @@ fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
 axs.set_xlim(0, 30)
 axs.plot (x0, z0, 'grey')
 ld = np.array(loc_data, dtype=object)
-for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
+for p in ld[(np.random.randint(len(loc_data),size=200)).astype(int)]:
     axs.plot(p[:,1], p[:,2], 2, 'blue')
 axs.set_ylabel('z (cm)')
 axs.set_xlabel('x (cm)')
