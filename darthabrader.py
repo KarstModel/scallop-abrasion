@@ -131,8 +131,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
     impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
     location_data = []
-    # get machine epsilon
-    eps2=np.sqrt( np.finfo(float).eps )
+    # define machine epsilon threshold
+    eps2=np.sqrt( u_w0*np.finfo(float).eps )
 
     
     for i in range(len(x0)):    #begin one particle at reast at each x-position at its fall height (Hf per Lamb et al., 2008)

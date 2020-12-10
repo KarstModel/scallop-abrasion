@@ -421,7 +421,7 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # This is where the grainsize is selected by user
 # =============================================================================
 
-grain = "sand"
+grain = "gravel"
 
 if grain == "gravel":
     Hf = 7.92    #distance of fall for 60-mm gravel (Lamb et al., 2008)
