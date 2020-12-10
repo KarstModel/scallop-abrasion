@@ -172,10 +172,15 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 z_idx = 100
             
             wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
-                                                     
-            Re_p = particle_reynolds_number(D, wrel, mu_kin)
-            drag_coef = dragcoeff(Re_p)
-            print('wrel', wrel, 'drag_coef', drag_coef)
+            
+            # make sure result of squaring wrel is above machine precision
+            if np.abs(wrel) > 1e-16:                                       
+                Re_p = particle_reynolds_number(D, wrel, mu_kin)
+                drag_coef = dragcoeff(Re_p)
+                print('wrel', wrel, 'drag_coef', drag_coef)
+                a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+            else:
+                a = 0
             
             a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))                 
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
@@ -191,7 +196,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
             try:
                 next_x_idx = np.int(np.rint((pi_x/0.05)))
             except:
-                print('NaN in pi_x')
+                print('NaN in pi_x. this is fixed and should never happen again!')
                 next_x_idx = -9999
                 raise Exception
                 
