@@ -136,6 +136,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
 
     
     for i in range(len(x0)):    #begin one particle at reast at each x-position at its fall height (Hf per Lamb et al., 2008)
+        print('i ', i)  
         h = 0
         t = 0
         OOB_FLAG = False
@@ -183,14 +184,14 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
             else:
                 a = 0
             
-            print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
+            #print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
-            print('sediment_location[h, 3]', sediment_location[h, 3])
+            #print('sediment_location[h, 3]', sediment_location[h, 3])
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
             
             #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
             pi_u = drag * u_water[int(z_idx), int(x_idx)]
-            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
+            pi_w = sediment_location[h, 4] + (a * dt)
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
@@ -221,7 +222,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 z_idx = 100
             
             h+=1
-            print('h',h)
+            #print('h',h)
 
             
     
