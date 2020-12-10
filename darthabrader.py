@@ -131,7 +131,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
     impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
     location_data = []
-
+    # define machine epsilon threshold
+    eps2=np.sqrt( u_w0*np.finfo(float).eps )
 
     
     for i in range(len(x0)):    #begin one particle at reast at each x-position at its fall height (Hf per Lamb et al., 2008)
@@ -174,19 +175,20 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
             wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
             
             # make sure result of squaring wrel is above machine precision
-            if np.abs(wrel) > 1e-16:                                       
+            if np.abs(wrel) > eps2:                                       
                 Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
-                print('wrel', wrel, 'drag_coef', drag_coef)
+                #print('wrel', wrel, 'drag_coef', drag_coef)
                 a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
             else:
                 a = 0
             
-            a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))                 
+            print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
+            print('sediment_location[h, 3]', sediment_location[h, 3])
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
             
-            print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
+            #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
             pi_u = drag * u_water[int(z_idx), int(x_idx)]
             pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
@@ -200,8 +202,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 next_x_idx = -9999
                 raise Exception
                 
-            print ('next_x', next_x_idx)
-            if next_x_idx > (x0.size - 1) or next_x_idx < 0:
+            #print ('next_x', next_x_idx)
+            if next_x_idx >= x0.size or next_x_idx < 0:
                 #print('out of bounds in lower zone!')
                 OOB_FLAG = True
                 break                        
