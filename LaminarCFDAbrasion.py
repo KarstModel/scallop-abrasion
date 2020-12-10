@@ -417,31 +417,24 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 
 
 # definitions and parameters
+# =============================================================================
+# This is where the grainsize is selected by user
+# =============================================================================
 
-Hf_gravel = 7.92    #distance of fall for 60-mm gravel (Lamb et al., 2008)
-Hf_sand = 3.84     #distance of fall for 1-mm sand (Lamb et al., 2008)
-D_gravel = 6
-D_sand = 0.1
+grain = "gravel"
+
+if grain == "gravel":
+    Hf = 7.92    #distance of fall for 60-mm gravel (Lamb et al., 2008)
+    D = 6
+elif grain == "sand":
+    Hf = 3.84     #distance of fall for 1-mm sand (Lamb et al., 2008)
+    D = 0.1
+
 rho_quartz = 2.65  # g*cm^-3
 rho_water = 1
 Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
-drag_coef = (-490.546/Re) + (57.87e4/(Re*Re)) + 0.46
-mu_water = 0.013  # g*cm^-1*s^-1
-L = 5    # cm, Sauter-mean crest-to-crest scallop length
-
-Hf_grain = 6
-D_grain = 4.5
-
-
-# In[7]:
-
-
-Re = 23300
-(-490.546/Re) + (57.87e4/(Re*Re)) + 0.46
-
-
-# In[8]:
-
+mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
+L = 5    # cm, crest-to-crest scallop length
 
 
 # In[9]:
@@ -450,60 +443,42 @@ Re = 23300
 u_w0 = (Re * mu_water) / (L * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
 w_w0 = 1
 
-
-
-Re_p = da.particle_reynolds_number(D_gravel, w_w0, mu_water/rho_water)
+Re_p = da.particle_reynolds_number(D, w_w0, mu_water/rho_water)
 drag_coef = dragcoeff(Re_p)
 print('drag_coef', drag_coef)
 
-w_s_gravel = da.settling_velocity(rho_quartz, rho_water, drag_coef, D_gravel, Hf_gravel) # DW 12/8: I think this calculation might assume things no longer true about the settling code
-mass_gravel = np.pi * rho_quartz * D_gravel**3 / 6
-w_s_sand = da.settling_velocity(rho_quartz, rho_water, drag_coef, D_sand, Hf_sand)
-mass_sand = np.pi * rho_quartz * D_sand**3 / 6
-
-mass_grain = np.pi * rho_quartz * D_grain**3 / 6
-w_s_grain = da.settling_velocity(rho_quartz, rho_water, drag_coef, D_grain, Hf_grain)
-
+w_s = da.settling_velocity(rho_quartz, rho_water, drag_coef, D, Hf) # DW 12/8: I think this calculation might assume things no longer true about the settling code
+                            # RB 12/9: @DW, w_s is only used to calculate the trajectories in the upper fall where flow is assumed to be uniform
 
 # In[10]:
 
+impact_data, loc_data = da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, Hf, 0.05, theta2, mu_water/rho_water)
 
-print(w_s_sand)
-print(w_s_gravel)
-
-Hf = Hf_gravel
-D = D_gravel
-w_s = w_s_gravel
-
-gravel_impact_data, loc_data = da.sediment_saltation(x0, z0, Hf, w_water, u_water, u_w0, w_s, D, 0.05, theta2, drag_coef)
-
-fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,22))    
-#axs[0].set_xlim(10, 25)
+fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,26))    
 axs[0].plot (x0, z0, 'grey')
-axs[0].scatter (gravel_impact_data[:, 1], gravel_impact_data[:, 6]*10**-7)
-axs[0].set_ylabel('KE (Joules)')
+axs[0].scatter (impact_data[:, 1], impact_data[:, 6])
+axs[0].set_ylabel('KE (ergs)')
 axs[0].set_xlabel('x (cm)')
-axs[0].set_title('Kinetic energy of impacting ' + str(D_gravel*10) + ' mm grains on floor scallops, D/L = ' + str(D_gravel/5))
-#axs[1].set_xlim(10, 25)
+axs[0].set_title('Kinetic energy of impacting ' + str(D*10) + ' mm ' + grain + ' on floor scallops, D/L = ' + str(D/5))
 axs[1].plot (x0, z0, 'grey')
-axs[1].scatter(gravel_impact_data[:, 1], gravel_impact_data[:, 2], (gravel_impact_data[:, 6])/10**5)
+axs[1].scatter(impact_data[:, 1], impact_data[:, 2], (impact_data[:, 6])/10**6)
 axs[1].set_ylabel('z (cm)')
 axs[1].set_xlabel('x (cm)')
-axs[1].set_title('Kinetic energy of impacting ' + str(D_gravel*10) + ' mm grains on floor scallops, dot size scales with energy, D/L = ' + str(D_gravel/5))
-#axs[2].set_xlim(10, 25)
+axs[1].set_title('Kinetic energy of impacting ' + str(D*10) + ' mm '+ grain +' on floor scallops, dot size scales with energy, D/L = ' + str(D/5))
 axs[2].plot (x0, z0*100, 'grey')
-axs[2].scatter (gravel_impact_data[:, 1], gravel_impact_data[:, 5])
-axs[2].set_title (str(D_gravel*10) + ' mm grains velocity normal to surface at point of impact (cm/s)')
+axs[2].scatter (impact_data[:, 1], impact_data[:, 5])
+axs[2].set_title (str(D*10) + ' mm '+ grain +' velocity normal to surface at point of impact (cm/s)')
 axs[2].set_xlabel ('x (cm)')
 axs[2].set_ylabel ('w_i (cm/s)');
 
 # trajectory figure
 fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
 axs.set_xlim(0, 30)
+axs.set_ylim(-1, 8)
 axs.plot (x0, z0, 'grey')
 ld = np.array(loc_data, dtype=object)
-for p in ld[(np.random.randint(len(loc_data),size=200)).astype(int)]:
+for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
     axs.plot(p[:,1], p[:,2], 2, 'blue')
 axs.set_ylabel('z (cm)')
 axs.set_xlabel('x (cm)')
-axs.set_title('Trajectories of randomly selected ' + str(D_gravel*10) + ' mm grains on floor scallops, D/L = ' + str(D_gravel/5))
+axs.set_title('Trajectories of randomly selected ' + str(D*10) + ' mm '+ grain +' on floor scallops, D/L = ' + str(D/5))

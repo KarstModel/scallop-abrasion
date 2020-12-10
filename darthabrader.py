@@ -116,21 +116,24 @@ def settling_velocity(rho_sediment, rho_fluid, drag_coef, grain_size, fall_dista
     
     return w_s
 
-def particle_reynolds_number(D,urel,V):
-    # Grain diameter, relative velocity (settling-ambient), kinemativc viscosity
-    return 2*D*np.abs(urel)/V
+def particle_reynolds_number(D,urel,mu_kin):
+    # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
+    return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D, dx, theta2, mu):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf, dx, theta2, mu_kin):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
     drag = (3 * rho_w/(rho_w + 2 * rho_s))  ##### velocity factor for sphere transported by fluid (Landau and Lifshitz, 1995)
     g = -981
-    l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     m = np.pi * rho_s * D**3 / 6
+    l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
     location_data = []
+    # define machine epsilon threshold
+    eps2=np.sqrt( u_w0*np.finfo(float).eps )
+
     
     for i in range(len(x0)):    #begin one particle at reast at each x-position at its fall height (Hf per Lamb et al., 2008)
         h = 0
@@ -176,16 +179,16 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             
             # these blocks make sure the relative velocity is sufficiently above 
             # machine precision that squaring it in the next step doesn't result in underflow
-            if np.abs(wrel) > 1e-16:                           
-                Re_p = particle_reynolds_number(D, wrel, mu/rho_w)
+            if np.abs(wrel) > eps2:                                       
+                Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
-                print('drag_coef_w', drag_coef)
-                az = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))   
+                #print('wrel', wrel, 'drag_coef', drag_coef)
+                az = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
             else:
-                az=0
+                az = 0
                           
-            if np.abs(urel) > 1e-16:
-                Re_p = particle_reynolds_number(D, urel, mu/rho_w)
+            if np.abs(urel) > eps2:
+                Re_p = particle_reynolds_number(D, urel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
                 ax = -((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
                 print('drag_coef_w', drag_coef)
@@ -198,6 +201,7 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
             pi_u = sediment_location[h, 3] + drag * u_water[int(z_idx), int(x_idx)] + (ax * dt)
             pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (az * dt)
+
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
@@ -205,20 +209,20 @@ def sediment_saltation(x0, scallop_elevation, Hf, w_water, u_water, u_w0, w_s, D
             try:
                 next_x_idx = np.int(np.rint((pi_x/0.05)))
             except:
-                print('NaN in pi_x')
+                print('NaN in pi_x. this is fixed and should never happen again!')
                 next_x_idx = -9999
                 break
                 
-            print ('next_x', next_x_idx)
-            
-            if next_x_idx > (x0.size - 1) or next_x_idx < 0:
+            #print ('next_x', next_x_idx)
+            if next_x_idx >= x0.size or next_x_idx < 0:
+
                 #print('out of bounds in lower zone!')
                 OOB_FLAG = True
                 break                        
 
             
-            if pi_z <= scallop_elevation[int(next_x_idx)] and next_x_idx > 0:
-                impact_data[i, :5] = sediment_location[h+1]
+            if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
+                impact_data[i, :5] = ((sediment_location[h] + sediment_location[h+1])/2)
                 print('impact!')
                 break
             
