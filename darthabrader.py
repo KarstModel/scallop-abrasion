@@ -159,28 +159,38 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
             pi_u = drag * u_w0
             pi_w = -(Hf - pi_z)/t            
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)  
-            x_idx = (i + h)
-            z_idx = np.rint((pi_z/0.05))
+   #         x_idx = (i + h)
+    #        z_idx = np.rint((pi_z/0.05))
             
         # near-ground portion, with drag
         while not OOB_FLAG and h < x0.size and sediment_location[h, 2] < 4 and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
             t += dt
             # get current indices -  this should be the previous h, above
-            x_idx = np.rint((sediment_location[h, 1]/0.05))                
+        #    x_idx = np.rint((sediment_location[h, 1]/0.05))                
                 
-            if sediment_location[h, 2] <= 5:
-                z_idx = np.rint((sediment_location[h, 2]/0.05))
-            else:
-                z_idx = 100
+      #      if sediment_location[h, 2] <= 5:
+       #         z_idx = np.rint((sediment_location[h, 2]/0.05))
+        #    else:
+         #       z_idx = 100
             
             #locate the two points at which the grain's velocity relative to the water is tangential to the water flow
-            phi = np.arctan(sediment_location[h, 4]/sediment_location[h, 3])
+            if sediment_location[h,3] != 0:
+                phi = np.arctan(sediment_location[h, 4]/sediment_location[h, 3])             
+            else:
+                print('div/0 or other error in theta1')
+                phi = 0
+            
+            
+            
             tan_a = [(sediment_location[h, 1] + 0.5 * D *np.cos((np.pi/2)-phi)), (sediment_location[h, 2] + 0.5 * D *np.sin((np.pi/2)-phi))]
             tan_b = [(sediment_location[h, 1] + 0.5 * D *np.cos(-(np.pi/2)-phi)), (sediment_location[h, 2] + 0.5 * D *np.sin(-(np.pi/2)-phi))]
             x_idx__tan_a = np.rint((tan_a[0]/0.05))
             z_idx__tan_a = np.rint((tan_a[1]/0.05))
             x_idx__tan_b = np.rint((tan_b[0]/0.05))
             z_idx__tan_b = np.rint((tan_b[1]/0.05))
+            
+            print('x ', sediment_location[h,1], 'z ', sediment_location[h, 2])
+            print('phi ', phi)
             if x_idx__tan_a < (x0.size - 1) and x_idx__tan_b < (x0.size - 1) and x_idx__tan_a >= 0 and x_idx__tan_b >=0:
                 continue
             else:
@@ -216,6 +226,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 
                 wrel = sediment_location[h, 4] - w_avail
                 urel = sediment_location[h, 3] - u_avail
+                
+                print('urel ', urel, 'wrel ', wrel)
             
                 # make sure result of squaring wrel is above machine precision
                 if np.abs(wrel) > eps2 and np.abs(urel) > eps2:                                       
@@ -226,63 +238,63 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 else:
                     a = 0
             
-                #print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
-                pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
-                #print('sediment_location[h, 3]', sediment_location[h, 3])
-                pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
+            #print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
+            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
+            #print('sediment_location[h, 3]', sediment_location[h, 3])
+            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
             
-                #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
-                pi_u = sediment_location[h, 3] - drag * urel
-                pi_w = sediment_location[h, 4] + (a * dt)
-                sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
+            #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
+            pi_u = sediment_location[h, 3] - drag * urel
+            pi_w = sediment_location[h, 4] + (a * dt)
+            sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
-                # projected next 
-                try:
-                    next_x_idx = np.int(np.rint((pi_x/0.05)))
-                except:
-                    print('NaN in pi_x. this is fixed and should never happen again!')
-                    next_x_idx = -9999
-                    raise Exception
+# projected next 
+            try:
+                next_x_idx = np.int(np.rint((pi_x/0.05)))
+            except:
+                print('NaN in pi_x. this is fixed and should never happen again!')
+                next_x_idx = -9999
+                raise Exception
                 
-                #print ('next_x', next_x_idx)
-                if next_x_idx >= x0.size or next_x_idx < 0:
-                    #print('out of bounds in lower zone!')
-                    OOB_FLAG = True
-                    break                        
+            #print ('next_x', next_x_idx)
+            if next_x_idx >= x0.size or next_x_idx < 0:
+                #print('out of bounds in lower zone!')
+                OOB_FLAG = True
+                break                        
 
             
-                if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
-                    impact_data[i, :5] = ((sediment_location[h] + sediment_location[h+1])/2)
-                    print('impact!')
-                    break
+            if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
+                impact_data[i, :5] = ((sediment_location[h] + sediment_location[h+1])/2)
+                print('impact!')
+                break
             
                             
-                if pi_z <= 5:
-                    z_idx = np.int(np.rint((pi_z/0.05)))
-                else:
-                    z_idx = 100
+          #  if pi_z <= 5:
+           #     z_idx = np.int(np.rint((pi_z/0.05)))
+            #else:
+             #   z_idx = 100
             
-                h+=1
-                #print('h',h)
+            h+=1
+            #print('h',h)
 
             
     
-        if impact_data[i,3] != 0:
-            theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
-        else:
-            print('div/0 or other error in theta1')
-            theta1 = 0
+            if impact_data[i,3] != 0:
+                theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
+            else:
+                print('div/0 or other error in theta1')
+                theta1 = 0
             
-        alpha = np.pi - theta1 - theta2[i]          # angle of impact
+            alpha = np.pi - theta1 - theta2[i]          # angle of impact
             
-        impact_data[i, 5] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
-        if impact_data[i, 5] <= 0:          
-            impact_data[i, 6] += 0.5 * m * impact_data[i, 5]**2
-        else:
-            impact_data[i, 6] += 0 
-        
-        location_data.append(sediment_location)   # store trajectory for plotting
+            impact_data[i, 5] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
+            if impact_data[i, 5] <= 0:          
+                impact_data[i, 6] += 0.5 * m * impact_data[i, 5]**2
+            else:
+                impact_data[i, 6] += 0 
+            
+            location_data.append(sediment_location)   # store trajectory for plotting
         
     return impact_data, location_data
        
