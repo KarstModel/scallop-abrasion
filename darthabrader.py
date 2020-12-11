@@ -191,7 +191,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 Re_p = particle_reynolds_number(D, urel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
                 ax = -((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
-                print('drag_coef_w', drag_coef)
+                print('urel_drag', drag_coef)
             else:
                 ax = 0
                 
