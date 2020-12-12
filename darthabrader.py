@@ -173,24 +173,35 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 z_idx = 100
             
             wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
+            urel = sediment_location[h, 3] - u_water[int(z_idx), int(x_idx)]
+            print('wrel', wrel)
+            print('urel', urel)
             
-            # make sure result of squaring wrel is above machine precision
+            # these blocks make sure the relative velocity is sufficiently above 
+            # machine precision that squaring it in the next step doesn't result in underflow
             if np.abs(wrel) > eps2:                                       
                 Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
                 #print('wrel', wrel, 'drag_coef', drag_coef)
-                a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                az = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
             else:
-                a = 0
+                az = 0
+                          
+            if np.abs(urel) > eps2:
+                Re_p = particle_reynolds_number(D, urel, mu_kin)
+                drag_coef = dragcoeff(Re_p)
+                ax = -((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
+                print('urel_drag', drag_coef)
+            else:
+                ax = 0
+                
+            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt + 0.5 * ax * dt**2 
+            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * az * dt**2   
             
-            print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
-            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
-            print('sediment_location[h, 3]', sediment_location[h, 3])
-            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
-            
-            #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
-            pi_u = drag * u_water[int(z_idx), int(x_idx)]
-            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
+            print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
+            pi_u = sediment_location[h, 3] + drag * u_water[int(z_idx), int(x_idx)] + (ax * dt)
+            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (az * dt)
+
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
@@ -200,10 +211,11 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
             except:
                 print('NaN in pi_x. this is fixed and should never happen again!')
                 next_x_idx = -9999
-                raise Exception
+                break
                 
             #print ('next_x', next_x_idx)
             if next_x_idx >= x0.size or next_x_idx < 0:
+
                 #print('out of bounds in lower zone!')
                 OOB_FLAG = True
                 break                        
@@ -224,8 +236,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
             print('h',h)
 
             
-    
-        if impact_data[i,3] != 0:
+        print('impact_data[i, 3]',impact_data[i, 3])
+        if impact_data[i,3] != 0.0:
             theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
         else:
             print('div/0 or other error in theta1')
