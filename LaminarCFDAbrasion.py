@@ -482,3 +482,29 @@ for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
 axs.set_ylabel('z (cm)')
 axs.set_xlabel('x (cm)')
 axs.set_title('Trajectories of randomly selected ' + str(D*10) + ' mm '+ grain +' on floor scallops, D/L = ' + str(D/5))
+
+# velocity exploration
+###histogram of last recorded velocities of all particles
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+axs.hist(impact_data[:, 5], 20)
+axs.set_xlabel('w_i (cm/s)')
+axs.set_title('Histogram of impact velocities of ' + str(D*10) + ' mm ' + grain + ' on 5 cm floor scallops')
+
+# =============================================================================
+# ###velocities with time
+# fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+# for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
+#     axs.plot(p[:,0], np.sqrt(p[:,4]**2 + p[:,3]**2), 2, 'blue')
+# axs.set_ylabel('v_s (cm)')
+# axs.set_xlabel('t (sec)')
+# axs.set_title('Velocity magnitudes of randomly selected ' + str(D*10) + ' mm '+ grain +' in flow over 5 cm scallops')
+# 
+# =============================================================================
+### vertical velocities with time
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
+    axs.plot(p[:,0], p[:,4], 2, 'blue')
+axs.set_ylabel('v_s (cm)')
+axs.set_xlabel('t (sec)')
+axs.set_title('Vertical velocities of randomly selected ' + str(D*10) + ' mm '+ grain +' in flow over 5 cm scallops')
+
