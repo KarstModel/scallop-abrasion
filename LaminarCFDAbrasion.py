@@ -452,7 +452,7 @@ w_s = da.settling_velocity(rho_quartz, rho_water, drag_coef, D, Hf) # DW 12/8: I
 
 # In[10]:
 
-impact_data, loc_data = da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, Hf, 0.05, theta2, mu_water/rho_water)
+impact_data, loc_data = da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water)
 
 fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,26))    
 axs[0].plot (x0, z0, 'grey')
