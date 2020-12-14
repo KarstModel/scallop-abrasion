@@ -128,15 +128,11 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     g = 981
     m = np.pi * rho_s * D**3 / 6
     
-    #calculate bedload height as function of grain size (Kumbhakar et al., 2018)
-    a_1 = -2.096
-    b = a_1 + 1
-    D_star = D * (((rho_s - 1) * g)/nu**2)**0.333
-    eta = 2.68 * 10**-4 * D_star**1.3142 * (np.sin(0.781 * rho_s))**-11.832
-    dhmin = 8.4823 * rho_s**-1.3598 * D_star**-0.135
-    dhmax = 420.36 * rho_s**-0.0534 * D_star**-1.0112
-    Hf = (dhmin**b + (dhmax**b - dhmin**b)*(tau/tau_max)**eta)**(1/b)
-    
+    #calculate bedload height as function of grain size (Wilson, 1987)
+    xi = np.linspace(0, 1, 5)
+    delta = (0.5 + 3.5 * xi)*D
+    Hf = delta[2]
+     
     
     
     
