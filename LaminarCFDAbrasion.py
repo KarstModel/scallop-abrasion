@@ -421,20 +421,29 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # This is where the grainsize is selected by user
 # =============================================================================
 
-grain = "gravel"
+D = 10    #grain diameter in cm
+xi = np.linspace(0, 1, 5)
+delta = (0.5 + 3.5 * xi)*D
+Hf = delta[1]
+if Hf < 0.71:
+    Hf = 0.71
 
-if grain == "gravel":
-    Hf = 7.92    #distance of fall for 60-mm gravel (Lamb et al., 2008)
-    D = 6
-elif grain == "sand":
-    Hf = 3.84     #distance of fall for 1-mm sand (Lamb et al., 2008)
-    D = 0.1
+if D < 0.0063:
+    grain = 'silt'
+elif D >= 0.0063 and D < 0.2:
+    grain = 'sand'
+elif D >= 0.2 and D < 6.4:
+    grain = 'pebbles'
+elif D >= 6.4:
+    grain = 'cobbles'
 
 rho_quartz = 2.65  # g*cm^-3
 rho_water = 1
 Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
 mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
 L = 5    # cm, crest-to-crest scallop length
+
+
 
 
 # In[9]:
@@ -452,7 +461,7 @@ w_s = da.settling_velocity(rho_quartz, rho_water, drag_coef, D, Hf) # DW 12/8: I
 
 # In[10]:
 
-impact_data, loc_data = da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, Hf, 0.05, theta2, mu_water/rho_water)
+impact_data, loc_data = da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water)
 
 fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,26))    
 axs[0].plot (x0, z0, 'grey')
@@ -474,7 +483,7 @@ axs[2].set_ylabel ('w_i (cm/s)');
 # trajectory figure
 fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
 axs.set_xlim(0, 30)
-axs.set_ylim(-1, 8)
+#axs.set_ylim(-1, 8)
 axs.plot (x0, z0, 'grey')
 ld = np.array(loc_data, dtype=object)
 for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
@@ -482,3 +491,28 @@ for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
 axs.set_ylabel('z (cm)')
 axs.set_xlabel('x (cm)')
 axs.set_title('Trajectories of randomly selected ' + str(D*10) + ' mm '+ grain +' on floor scallops, D/L = ' + str(D/5))
+
+# velocity exploration
+###histogram of last recorded velocities of all particles
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+axs.hist(impact_data[:, 5], 20)
+axs.set_xlabel('w_i (cm/s)')
+axs.set_title('Histogram of impact velocities of ' + str(D*10) + ' mm ' + grain + ' on 5 cm floor scallops')
+
+ ###velocities with time
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
+     axs.plot(p[:,0], np.sqrt(p[:,4]**2 + p[:,3]**2), 2, 'blue')
+axs.set_ylabel('v_s (cm)')
+axs.set_xlabel('t (sec)')
+axs.set_title('Velocity magnitudes of randomly selected ' + str(D*10) + ' mm '+ grain +' in flow over 5 cm scallops')
+ 
+
+### vertical velocities with time
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
+    axs.plot(p[:,0], p[:,4], 2, 'blue')
+axs.set_ylabel('v_s (cm)')
+axs.set_xlabel('t (sec)')
+axs.set_title('Vertical velocities of randomly selected ' + str(D*10) + ' mm '+ grain +' in flow over 5 cm scallops')
+

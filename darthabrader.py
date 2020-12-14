@@ -120,13 +120,21 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf, dx, theta2, mu_kin):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx, theta2, mu_kin):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
     drag = (3 * rho_w/(rho_w + 2 * rho_s))  ##### velocity factor for sphere transported by fluid (Landau and Lifshitz, 1995)
-    g = -981
+    g = 981
     m = np.pi * rho_s * D**3 / 6
+    
+    #calculate bedload height as function of grain size (Wilson, 1987)
+    xi = np.linspace(0, 1, 5)
+    delta = (0.5 + 3.5 * xi)*D
+    Hf = delta[1]
+    if Hf < 0.71:
+        Hf = 0.71
+        
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
@@ -162,7 +170,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
             z_idx = np.rint((pi_z/0.05))
             
         # near-ground portion, with drag
-        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] < 4 and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
+        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
             t += dt
             # get current indices -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
@@ -179,13 +187,13 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
                 #print('wrel', wrel, 'drag_coef', drag_coef)
-                a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                a = -(1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
             else:
                 a = 0
             
-            print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
+           # print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
-            print('sediment_location[h, 3]', sediment_location[h, 3])
+            #print('sediment_location[h, 3]', sediment_location[h, 3])
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
             
             #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
@@ -210,7 +218,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
 
             
             if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
-                impact_data[i, :5] = ((sediment_location[h] + sediment_location[h+1])/2)
+                impact_data[i, :5] = sediment_location[h+1]
                 print('impact!')
                 break
             
@@ -240,6 +248,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
             impact_data[i, 6] += 0 
         
         location_data.append(sediment_location)   # store trajectory for plotting
+        
+        print('bedload thickness = ', Hf)
         
     return impact_data, location_data
        
