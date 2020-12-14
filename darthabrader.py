@@ -135,11 +135,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     if Hf < 0.71:
         Hf = 0.71
         
-        
-         
-    
-    
-    
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
@@ -223,7 +218,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
 
             
             if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
-                impact_data[i, :5] = ((sediment_location[h] + sediment_location[h+1])/2)
+                impact_data[i, :5] = sediment_location[h+1]
                 print('impact!')
                 break
             
