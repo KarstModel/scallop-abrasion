@@ -120,13 +120,26 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf, dx, theta2, mu_kin):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx, theta2, mu_kin):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
     drag = (3 * rho_w/(rho_w + 2 * rho_s))  ##### velocity factor for sphere transported by fluid (Landau and Lifshitz, 1995)
-    g = -981
+    g = 981
     m = np.pi * rho_s * D**3 / 6
+    
+    #calculate bedload height as function of grain size (Kumbhakar et al., 2018)
+    a_1 = -2.096
+    b = a_1 + 1
+    D_star = D * (((rho_s - 1) * g)/nu**2)**0.333
+    eta = 2.68 * 10**-4 * D_star**1.3142 * (np.sin(0.781 * rho_s))**-11.832
+    dhmin = 8.4823 * rho_s**-1.3598 * D_star**-0.135
+    dhmax = 420.36 * rho_s**-0.0534 * D_star**-1.0112
+    Hf = (dhmin**b + (dhmax**b - dhmin**b)*(tau/tau_max)**eta)**(1/b)
+    
+    
+    
+    
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
@@ -179,13 +192,13 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, Hf
                 Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
                 #print('wrel', wrel, 'drag_coef', drag_coef)
-                a = (1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                a = -(1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
             else:
                 a = 0
             
-            print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
+           # print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
-            print('sediment_location[h, 3]', sediment_location[h, 3])
+            #print('sediment_location[h, 3]', sediment_location[h, 3])
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
             
             #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
