@@ -131,8 +131,12 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     #calculate bedload height as function of grain size (Wilson, 1987)
     xi = np.linspace(0, 1, 5)
     delta = (0.5 + 3.5 * xi)*D
-    Hf = delta[2]
-     
+    Hf = delta[1]
+    if Hf < 0.71:
+        Hf = 0.71
+        
+        
+         
     
     
     
@@ -171,7 +175,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             z_idx = np.rint((pi_z/0.05))
             
         # near-ground portion, with drag
-        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] < 4 and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
+        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
             t += dt
             # get current indices -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
@@ -249,6 +253,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             impact_data[i, 6] += 0 
         
         location_data.append(sediment_location)   # store trajectory for plotting
+        
+        print('bedload thickness = ', Hf)
         
     return impact_data, location_data
        
