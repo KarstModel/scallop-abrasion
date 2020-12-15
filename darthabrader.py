@@ -111,8 +111,12 @@ def settling_velocity(rho_sediment, rho_fluid, drag_coef, grain_size, fall_dista
     R = (rho_sediment/rho_fluid - 1)
     g = 981 # cm*s^-2
     D = grain_size
-    C = drag_coef
-    w_s = np.sqrt((4*R*g*D)/(3*C)) 
+    nu = 0.01307  # g*cm^-1*s^-1
+    #C = drag_coef
+    C_1 = 18
+    C_2 = 1
+    #w_s = np.sqrt((4*R*g*D)/(3*C))
+    w_s = -(R*g*D**2)/((C_1*nu)+np.sqrt(0.75*C_2*R*g*D**3))
     
     return w_s
 
@@ -130,10 +134,9 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     
     #calculate bedload height as function of grain size (Wilson, 1987)
     xi = np.linspace(0, 1, 5)
-    delta = (0.5 + 3.5 * xi)*D
+    delta = 0.7 + (0.5 + 3.5 * xi)*D
     Hf = delta[1]
-    if Hf < 0.71:
-        Hf = 0.71
+
         
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
@@ -199,6 +202,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
             pi_u = drag * u_water[int(z_idx), int(x_idx)]
             pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
+            if pi_w < w_s:
+                pi_w = w_s
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
@@ -229,7 +234,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
                 z_idx = 100
             
             h+=1
-            print('h',h)
+            #print('h',h)
 
             
     
