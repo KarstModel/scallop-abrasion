@@ -137,14 +137,22 @@ e_max = 0.47  #erosion rate in mm/year
 f_min = e_min / ( 3155760*A* B * w**3)
 f_max = e_max / (3155760* A* B * w**3)
 
+ImpactRate = 0.41
+IR = ImpactRate * np.ones_like(A)
+
 fig = plt.figure(figsize=(11, 7), dpi=100)
-plt.contourf(A, F, E, alpha = 0.5)
+plt.contourf(A, F, E, alpha = 0.5, cmap = 'nipy_spectral')
 plt.colorbar()
 plt.ylim(0, 1)
+plt.plot(IR, F)
 plt.plot(A, f_max, '--', color = 'grey', label = 'dissolution')
 plt.plot(A, f_min, '--', color = 'grey')
-plt.fill_between(A, f_min, f_max, alpha = 0.5, color = 'grey')
-plt.title('Contour plot of erosion rate due to mechanical abrasion by 20 mm grains (mm/year), dissolutional domain shaded in gray')
-plt.xlabel('Fraction of grains not advected away from surface')
-plt.ylabel('Fraction of surface exposed (not alluviated)');
+plt.fill_between(A, f_min, f_max, alpha = 0.8, color = 'grey')
+plt.title('Erosion rate due to mechanical abrasion by 20 mm grains, dissolutional domain shaded in gray')
+plt.xlabel('Fraction of grains impacting surface (not advected away)')
+plt.ylabel('Fraction of surface exposed (not alluviated)')
+fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
+                    wspace=0.4, hspace=0.1)
+ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
+ax.set_ylabel('Erosion rate (mm/year)');
 
