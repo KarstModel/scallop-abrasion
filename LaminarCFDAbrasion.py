@@ -421,7 +421,7 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # This is where the grainsize is selected by user
 # =============================================================================
 grain_diam_max = 2.5  # cm
-diam = grain_diam_max * np.logspace(-3.5, 0, 9)
+diam = grain_diam_max * np.logspace(-3, 0, 9)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
