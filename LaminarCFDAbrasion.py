@@ -421,6 +421,10 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # This is where the grainsize is selected by user
 # =============================================================================
 diam = 5 * np.logspace(-4, 0.5, 21)
+EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
+XAtImpact = np.empty(shape = (len(diam), len(x0)))
+ZAtImpact = np.empty(shape = (len(diam), len(x0)))
+i = 0
 for D in diam:
     xi = np.linspace(0, 1, 5)
     delta = 0.7 + (0.5 + 3.5 * xi)*D
@@ -461,22 +465,17 @@ for D in diam:
     
     impact_data, loc_data = da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water)
     
-    fig, axs = plt.subplots(nrows = 3, ncols = 1, figsize = (11,26))    
-    axs[0].plot (x0, z0, 'grey')
-    axs[0].scatter (impact_data[:, 1], impact_data[:, 6])
-    axs[0].set_ylabel('KE (ergs)')
-    axs[0].set_xlabel('x (cm)')
-    axs[0].set_title('Kinetic energy of impacting ' + str(round(D*10, 3)) + ' mm ' + grain + ' on floor scallops, D/L = ' + str(round(D/5, 2)))
-    axs[1].plot (x0, z0, 'grey')
-    axs[1].scatter(impact_data[:, 1], impact_data[:, 2], (impact_data[:, 6])/10**(np.sqrt(D**3)))
-    axs[1].set_ylabel('z (cm)')
-    axs[1].set_xlabel('x (cm)')
-    axs[1].set_title('Kinetic energy of impacting ' + str(round(D*10, 3)) + ' mm '+ grain +' on floor scallops, dot size scales with energy, D/L = ' + str(round(D/5, 2)))
-    axs[2].plot (x0, z0*100, 'grey')
-    axs[2].scatter (impact_data[:, 1], impact_data[:, 5])
-    axs[2].set_title (str(round(D*10, 3)) + ' mm '+ grain +' velocity normal to surface at point of impact (cm/s)')
-    axs[2].set_xlabel ('x (cm)')
-    axs[2].set_ylabel ('w_i (cm/s)');
+    ImpactEnergyAvg = np.empty_like(diam)
+    TotalImpactEnergy = np.empty_like(diam)
+    ImpactEnergyTotalAvg = np.average(impact_data[:, 6])
+    NumberImpacts = np.count_nonzero(impact_data[:, 6])
+    ImpactEnergyAvg[i] = ImpactEnergyTotalAvg/NumberImpacts 
+    TotalImpactEnergy[i] = np.sum(impact_data[300:401, 6])
+      
+    EnergyAtImpact[i, :] = impact_data[:, 6]
+    XAtImpact[i, :] = impact_data[:, 1]
+    ZAtImpact[i, :] = impact_data[:, 2]
+    i += 1
     
     # trajectory figure
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
@@ -504,8 +503,7 @@ for D in diam:
     axs.set_ylabel('v_s (cm)')
     axs.set_xlabel('t (sec)')
     axs.set_title('Velocity magnitudes of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' in flow over 5 cm scallops')
-     
-    
+         
     ### vertical velocities with time
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
     for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
@@ -513,4 +511,33 @@ for D in diam:
     axs.set_ylabel('v_s (cm)')
     axs.set_xlabel('t (sec)')
     axs.set_title('Vertical velocities of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' in flow over 5 cm scallops')
+    
+### average energy plot
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+axs.semilogy((diam * 10), ImpactEnergyAvg)
+axs.set_xlabel('Grain diameter (mm)')
+axs.set_ylabel('Average partticle kinetic energy per impact (ergs)') 
+
+### total energy plot 
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+axs.semilogy((diam * 10), TotalImpactEnergy)
+axs.set_xlabel('Grain diameter (mm)')
+axs.set_ylabel('Total impact energy over length of one scallop (ergs)') 
+
+# impact location & energy-at-location plot
+
+GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
+ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
+
+for j in range(len(diam)):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    axs.plot(x0, z0, 'grey')
+    EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
+    findColors = np.log10(EnergyAtImpact[j, :])    
+    axs.scatter(XAtImpact[j, :], ZAtImpact[j, :], c = (findColors/np.min(ColorScheme)))
+    axs.set_ylabel('z (cm)')
+    axs.set_xlabel('x (cm)')
+    axs.set_title('Locations of impacting ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on 5 cm floor scallops, dot color scales with particle kinetic energy')
+
+
     
