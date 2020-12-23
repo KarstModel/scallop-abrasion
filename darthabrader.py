@@ -241,7 +241,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         if impact_data[i,3] != 0:
             theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
         else:
-            print('div/0 or other error in theta1')
+            #print('div/0 or other error in theta1')
             theta1 = 0
             
         alpha = np.pi - theta1 - theta2[i]          # angle of impact
@@ -254,7 +254,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         
         location_data.append(sediment_location)   # store trajectory for plotting
         
-        print('bedload thickness = ', Hf)
+        #print('bedload thickness = ', Hf)
         
     return impact_data, location_data
        
