@@ -2,7 +2,7 @@
 """
 Created on Wed Dec 23 14:10:15 2020
 
-@author: rache
+@author: rachelbosch
 """
 
 
@@ -13,6 +13,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import darthabrader as da
 from dragcoeff import dragcoeff
+from numpy import genfromtxt
 
 # ## assumptions
 # 
@@ -24,7 +25,9 @@ from dragcoeff import dragcoeff
 
 plt.close('all')
 
-##variable declarations
+TurbVel = genfromtxt('TurbulentFlowfield.csv', delimiter=',')
+
+# variable declarations
 nx = 101
 ny = 101
 nt = 10
@@ -32,356 +35,51 @@ nit = 50
 c = 1
 dx = 2 / (nx - 1)
 dy = 2 / (ny - 1)
-x = np.linspace(0, 5, nx)
-y = np.linspace(0, 5, ny)
-X, Y = np.meshgrid(x, y)
+new_x = np.linspace(0, 5, nx)
+new_z = np.linspace(0, 5, ny)
+new_X, new_Z = np.meshgrid(new_x, new_z)
+new_u = np.zeros((ny, nx))
+new_w = np.zeros((ny, nx))
 
-
-##physical variables
-rho = 1000
-nu = 4
-F = 1
-dt = .000001
-
-#initial conditions
-u = np.zeros((ny, nx)) + 60
-un = np.zeros((ny, nx))
-
-v = np.zeros((ny, nx))
-vn = np.zeros((ny, nx))
-
-p = np.ones((ny, nx))
-pn = np.ones((ny, nx))
-
-b = np.zeros((ny, nx))
-
-
-numsc = 1
-w = da.scallop_array_one(x, numsc)
-
-udiff = 1
-stepcount = 0
-
-while udiff > 0.00001:
-    un = u.copy()
-    vn = v.copy()
-
-    b = da.build_up_b(rho, dt, dx, dy, u, v)
-    p = da.pressure_poisson_periodic(p, dx, dy, nit, b)
-
-    u[1:-1, 1:-1] = (un[1:-1, 1:-1] -
-                     un[1:-1, 1:-1] * dt / dx * 
-                    (un[1:-1, 1:-1] - un[1:-1, 0:-2]) -
-                     vn[1:-1, 1:-1] * dt / dy * 
-                    (un[1:-1, 1:-1] - un[0:-2, 1:-1]) -
-                     dt / (2 * rho * dx) * 
-                    (p[1:-1, 2:] - p[1:-1, 0:-2]) +
-                     nu * (dt / dx**2 * 
-                    (un[1:-1, 2:] - 2 * un[1:-1, 1:-1] + un[1:-1, 0:-2]) +
-                     dt / dy**2 * 
-                    (un[2:, 1:-1] - 2 * un[1:-1, 1:-1] + un[0:-2, 1:-1])) + 
-                     F * dt)
-
-    v[1:-1, 1:-1] = (vn[1:-1, 1:-1] -
-                     un[1:-1, 1:-1] * dt / dx * 
-                    (vn[1:-1, 1:-1] - vn[1:-1, 0:-2]) -
-                     vn[1:-1, 1:-1] * dt / dy * 
-                    (vn[1:-1, 1:-1] - vn[0:-2, 1:-1]) -
-                     dt / (2 * rho * dy) * 
-                    (p[2:, 1:-1] - p[0:-2, 1:-1]) +
-                     nu * (dt / dx**2 *
-                    (vn[1:-1, 2:] - 2 * vn[1:-1, 1:-1] + vn[1:-1, 0:-2]) +
-                     dt / dy**2 * 
-                    (vn[2:, 1:-1] - 2 * vn[1:-1, 1:-1] + vn[0:-2, 1:-1])))
-
-    # Periodic BC u @ x = -1     
-    u[1:-1, -1] = (un[1:-1, -1] - un[1:-1, -1] * dt / dx * 
-                  (un[1:-1, -1] - un[1:-1, -2]) -
-                   vn[1:-1, -1] * dt / dy * 
-                  (un[1:-1, -1] - un[0:-2, -1]) -
-                   dt / (2 * rho * dx) *
-                  (p[1:-1, 0] - p[1:-1, -2]) + 
-                   nu * (dt / dx**2 * 
-                  (un[1:-1, 0] - 2 * un[1:-1,-1] + un[1:-1, -2]) +
-                   dt / dy**2 * 
-                  (un[2:, -1] - 2 * un[1:-1, -1] + un[0:-2, -1])) + F * dt)
-
-    # Periodic BC u @ x = 0
-    u[1:-1, 0] = (un[1:-1, 0] - un[1:-1, 0] * dt / dx *
-                 (un[1:-1, 0] - un[1:-1, -1]) -
-                  vn[1:-1, 0] * dt / dy * 
-                 (un[1:-1, 0] - un[0:-2, 0]) - 
-                  dt / (2 * rho * dx) * 
-                 (p[1:-1, 1] - p[1:-1, -1]) + 
-                  nu * (dt / dx**2 * 
-                 (un[1:-1, 1] - 2 * un[1:-1, 0] + un[1:-1, -1]) +
-                  dt / dy**2 *
-                 (un[2:, 0] - 2 * un[1:-1, 0] + un[0:-2, 0])) + F * dt)
-
-    # Periodic BC v @ x = -1
-    v[1:-1, -1] = (vn[1:-1, -1] - un[1:-1, -1] * dt / dx *
-                  (vn[1:-1, -1] - vn[1:-1, -2]) - 
-                   vn[1:-1, -1] * dt / dy *
-                  (vn[1:-1, -1] - vn[0:-2, -1]) -
-                   dt / (2 * rho * dy) * 
-                  (p[2:, -1] - p[0:-2, -1]) +
-                   nu * (dt / dx**2 *
-                  (vn[1:-1, 0] - 2 * vn[1:-1, -1] + vn[1:-1, -2]) +
-                   dt / dy**2 *
-                  (vn[2:, -1] - 2 * vn[1:-1, -1] + vn[0:-2, -1])))
-
-    # Periodic BC v @ x = 0
-    v[1:-1, 0] = (vn[1:-1, 0] - un[1:-1, 0] * dt / dx *
-                 (vn[1:-1, 0] - vn[1:-1, -1]) -
-                  vn[1:-1, 0] * dt / dy *
-                 (vn[1:-1, 0] - vn[0:-2, 0]) -
-                  dt / (2 * rho * dy) * 
-                 (p[2:, 0] - p[0:-2, 0]) +
-                  nu * (dt / dx**2 * 
-                 (vn[1:-1, 1] - 2 * vn[1:-1, 0] + vn[1:-1, -1]) +
-                  dt / dy**2 * 
-                 (vn[2:, 0] - 2 * vn[1:-1, 0] + vn[0:-2, 0])))
+#restructure STAR-CCM+ turbulent flow data set
+for i in range(len(TurbVel)):
+    x_index = np.int(TurbVel[i, 0])
+    z_index = np.int(TurbVel[i, 1])
+    new_u[z_index, x_index] = TurbVel[i, 2]
+    new_w[z_index, x_index] = TurbVel[i, 3]
     
-    
-    # Wall BC: no-slip on scallop surface
-    u[:16, 0] = 0
-    u[:15, 1] = 0
-    u[:15, 2] = 0
-    u[:14, 3] = 0
-    u[:13, 4] = 0
-    u[:13, 5] = 0
-    u[:12, 6] = 0
-    u[:12, 7] = 0
-    u[:11, 8] = 0
-    u[:10, 9] = 0
-    u[:10, 10] = 0
-    u[:9, 11] = 0
-    u[:9, 12] = 0
-    u[:8, 13] = 0
-    u[:8, 14] = 0
-    u[:7, 15] = 0
-    u[:7, 16] = 0
-    u[:6, 17] = 0
-    u[:6, 18] = 0
-    u[:5, 19] = 0
-    u[:5, 20] = 0
-    u[:4, 21] = 0
-    u[:4, 22] = 0
-    u[:3, 23] = 0
-    u[:3, 24] = 0
-    u[:3, 25] = 0
-    u[:2, 26] = 0
-    u[:2, 27] = 0
-    u[:2, 28] = 0
-    u[:1, 29] = 0
-    u[:1, 30] = 0
-    u[:1, 31] = 0
-    u[:1, 32] = 0
-    u[:1, 33] = 0
-    u[0, 34] = 0
-    u[0, 35] = 0
-    u[0, 36] = 0
-    u[0, 37] = 0
-    u[0, 38] = 0
-    u[0, 39] = 0
-    u[0, 40] = 0
-    u[0, 41] = 0
-    u[0, 42] = 0
-    u[0, 43] = 0
-    u[0, 44] = 0
-    u[0, 45] = 0
-    u[:1, 46] = 0
-    u[:1, 47] = 0
-    u[:1, 48] = 0
-    u[:1, 49] = 0
-    u[:1, 50] = 0
-    u[:1, 51] = 0
-    u[:2, 52] = 0
-    u[:2, 53] = 0
-    u[:2, 54] = 0
-    u[:3, 55] = 0
-    u[:3, 56] = 0
-    u[:3, 57] = 0
-    u[:4, 58] = 0
-    u[:4, 59] = 0
-    u[:4, 60] = 0
-    u[:5, 61] = 0
-    u[:5, 62] = 0
-    u[:5, 63] = 0
-    u[:6, 64] = 0
-    u[:6, 65] = 0
-    u[:6, 66] = 0
-    u[:7, 67] = 0
-    u[:7, 68] = 0
-    u[:8, 69] = 0
-    u[:8, 70] = 0
-    u[:8, 71] = 0
-    u[:9, 72] = 0
-    u[:9, 73] = 0
-    u[:9, 74] = 0
-    u[:10, 75] = 0
-    u[:10, 76] = 0
-    u[:10, 77] = 0
-    u[:11, 78] = 0
-    u[:11, 79] = 0
-    u[:11, 80] = 0
-    u[:12, 81] = 0
-    u[:12, 82] = 0
-    u[:12, 83] = 0
-    u[:12, 84] = 0
-    u[:13, 85] = 0
-    u[:13, 86] = 0
-    u[:13, 87] = 0
-    u[:13, 88] = 0
-    u[:14, 89] = 0
-    u[:14, 90] = 0
-    u[:14, 91] = 0
-    u[:14, 92] = 0
-    u[:14, 93] = 0
-    u[:15, 94] = 0
-    u[:15, 95] = 0
-    u[:15, 96] = 0
-    u[:15, 97] = 0
-    u[:15, 98] = 0
-    u[:16, 99] = 0
-    u[:17, 100] = 0
-    v[:16, 0] = 0
-    v[:15, 1] = 0
-    v[:15, 2] = 0
-    v[:14, 3] = 0
-    v[:13, 4] = 0
-    v[:13, 5] = 0
-    v[:12, 6] = 0
-    v[:12, 7] = 0
-    v[:11, 8] = 0
-    v[:10, 9] = 0
-    v[:10, 10] = 0
-    v[:9, 11] = 0
-    v[:9, 12] = 0
-    v[:8, 13] = 0
-    v[:8, 14] = 0
-    v[:7, 15] = 0
-    v[:7, 16] = 0
-    v[:6, 17] = 0
-    v[:6, 18] = 0
-    v[:5, 19] = 0
-    v[:5, 20] = 0
-    v[:4, 21] = 0
-    v[:4, 22] = 0
-    v[:3, 23] = 0
-    v[:3, 24] = 0
-    v[:3, 25] = 0
-    v[:2, 26] = 0
-    v[:2, 27] = 0
-    v[:2, 28] = 0
-    v[:1, 29] = 0
-    v[:1, 30] = 0
-    v[:1, 31] = 0
-    v[:1, 32] = 0
-    v[:1, 33] = 0
-    v[0, 34] = 0
-    v[0, 35] = 0
-    v[0, 36] = 0
-    v[0, 37] = 0
-    v[0, 38] = 0
-    v[0, 39] = 0
-    v[0, 40] = 0
-    v[0, 41] = 0
-    v[0, 42] = 0
-    v[0, 43] = 0
-    v[0, 44] = 0
-    v[0, 45] = 0
-    v[:1, 46] = 0
-    v[:1, 47] = 0
-    v[:1, 48] = 0
-    v[:1, 49] = 0
-    v[:1, 50] = 0
-    v[:1, 51] = 0
-    v[:2, 52] = 0
-    v[:2, 53] = 0
-    v[:2, 54] = 0
-    v[:3, 55] = 0
-    v[:3, 56] = 0
-    v[:3, 57] = 0
-    v[:4, 58] = 0
-    v[:4, 59] = 0
-    v[:4, 60] = 0
-    v[:5, 61] = 0
-    v[:5, 62] = 0
-    v[:5, 63] = 0
-    v[:6, 64] = 0
-    v[:6, 65] = 0
-    v[:6, 66] = 0
-    v[:7, 67] = 0
-    v[:7, 68] = 0
-    v[:8, 69] = 0
-    v[:8, 70] = 0
-    v[:8, 71] = 0
-    v[:9, 72] = 0
-    v[:9, 73] = 0
-    v[:9, 74] = 0
-    v[:10, 75] = 0
-    v[:10, 76] = 0
-    v[:10, 77] = 0
-    v[:11, 78] = 0
-    v[:11, 79] = 0
-    v[:11, 80] = 0
-    v[:12, 81] = 0
-    v[:12, 82] = 0
-    v[:12, 83] = 0
-    v[:12, 84] = 0
-    v[:13, 85] = 0
-    v[:13, 86] = 0
-    v[:13, 87] = 0
-    v[:13, 88] = 0
-    v[:14, 89] = 0
-    v[:14, 90] = 0
-    v[:14, 91] = 0
-    v[:14, 92] = 0
-    v[:14, 93] = 0
-    v[:15, 94] = 0
-    v[:15, 95] = 0
-    v[:15, 96] = 0
-    v[:15, 97] = 0
-    v[:15, 98] = 0
-    v[:16, 99] = 0
-    v[:17, 100] = 0
-    
-    #water surface BC, du/dy = 0 @ y = -1, v = 0 @ y = -2
-    u[-1, :] = u[-2, :] 
-    v[-1, :]=0
-    
-    udiff = np.abs(np.sum(u) - np.sum(un)) / np.sum(u)
-    stepcount += 1
+#identify holes in data set and patch them    
+holes_and_wall_u = np.where(new_u == 0)
+ux_zero = np.array(holes_and_wall_u[1])
+uz_zero = np.array(holes_and_wall_u[0])
 
-
+for j in range(len(ux_zero)):
+    if (ux_zero[j] > 0 & ux_zero[j] <= 40):
+        if (ux_zero[j] - ux_zero[j-1]) > 1:   #this is a hole in the lee-side data set
+            hole_z = np.int(uz_zero[j])
+            hole_x = np.int(ux_zero[j])
+            new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
+            new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
+        else:
+            continue        #this is a wall boundary, no action needed
+    elif (ux_zero[j] > 40 & ux_zero[j] < 100):
+        if (ux_zero[j + 1] - ux_zero[j]) > 1:   #this is a hole in the stoss-side data set
+            hole_z = np.int(uz_zero[j])
+            hole_x = np.int(ux_zero[j])
+            new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
+            new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
+        else:
+            continue        #this is a wall boundary, no action needed
+    else:
+        continue      # this is also inside the wall   
     
-print(stepcount)
 
 fig = plt.figure(figsize=(11, 7), dpi=100)
-plt.ylim(0,5)
-#plt.quiver(X[::, ::], Y[::, ::], u[::, ::], v[::, ::]);
-plt.contourf(X, Y, np.sqrt(u**2 + v**2), alpha = 0.5)
+plt.contourf(new_X, new_Z, np.sqrt(new_u**2 + new_w**2), alpha = 0.5)
 plt.colorbar()
-#plt.contour(X, Y, u)
-#plt.plot(x , w, 'b')
-#plt.title('Velocity magnitude (cm/s) with streamlines')
-#plt.streamplot(X, Y, u, v)
+plt.title('Velocity magnitude, turbulent flow')
 plt.xlabel('X')
 plt.ylabel('Z');
-
-
-# In[3]:
-
-
-fig = plt.figure(figsize=(11, 7), dpi=100)
-#plt.plot(x0[:101], z0[:101])
-plt.contourf(X, Y, v, alpha = 0.7, vmin = -40, vmax = 40)
-plt.colorbar()
-plt.title('Z-directed velocity, laminar flow')
-plt.xlabel('X')
-plt.ylabel('Z');
-
 
 # In[4]:
 
@@ -392,16 +90,14 @@ u_water = np.empty(shape=(101,601))
 w_water = np.empty(shape=(101,601))
 
 a = 6
-b = len(u) - 1
-c = len(u) - 1
+b = len(new_u) - 1
+c = len(new_u) - 1
 
 for i in range(a):
     for j in range(b):   
-        u_water[:, i*b + j] = u[:, j]
-        w_water[:, i*b + j] = v[:, j]
+        u_water[:, i*b + j] = new_u[:, j]
+        w_water[:, i*b + j] = new_w[:, j]
         
-
-
 # In[5]:
 
 
