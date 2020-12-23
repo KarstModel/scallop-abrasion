@@ -479,8 +479,8 @@ for D in diam:
     
     # trajectory figure
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    axs.set_xlim(0, 30)
-    #axs.set_ylim(-1, 8)
+    axs.set_xlim(15, 25)
+    axs.set_aspect('equal')
     axs.plot (x0, z0, 'grey')
     ld = np.array(loc_data, dtype=object)
     for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
@@ -528,6 +528,8 @@ axs.set_ylabel('Total impact energy over length of one scallop (Joules)')
 
 GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
 ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
+ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
+ColorMax = np.ceil(np.max(ColorNumbers))
 
 from matplotlib import colors
 
@@ -537,34 +539,40 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 my_colors = cm.get_cmap('cool', 256)
+fig, axs = plt.subplots(nrows = len(diam), ncols = 1, figsize = (11,26))
 
 for j in range(len(diam)):
-    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    
     if diam[j] < 0.0063:
         grain = 'silt'
     elif diam[j] >= 0.0063 and D < 0.2:
         grain = 'sand'
     elif diam[j] >= 0.2:
         grain = 'gravel'
-    axs.set_xlim(10, 20)
-    axs.plot(x0, z0, 'grey')
+    axs[j].set_xlim(15, 25)
+    axs[j].set_ylim(-0.5, 1.5)
+    axs[j].set_aspect('equal')
+    axs[j].plot(x0, z0, 'grey')
     EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
-    findColors = (np.log10(EnergyAtImpact[j, :]))/6 
-    impact_dots = axs.scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
+    findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
+    impact_dots = axs[j].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
     
-    #legend
-    divider = make_axes_locatable(axs)
+    
 
-    cax = divider.append_axes('right', size = '5%', pad = 0)
-    norm = colors.Normalize(vmin = 0, vmax = 6)
-
-    cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cax)
-    cax.set_ylabel('log10 of kinetic energy of impact in ergs')
-
-    axs.set_ylabel('z (cm)')
-    axs.set_xlabel('x (cm)')
-    axs.set_title('Locations of impacting ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on 5 cm floor scallops, dot color scales with particle kinetic energy')
-    plt.show()
+    axs[j].set_ylabel('z (cm)')
+    
+    axs[j].set_title('Locations of impact, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops, color indicates particle kinetic energy')
+#legend
+divider = make_axes_locatable(axs[int((len(diam)-1)/2)])
+#cax = divider.append_axes('right', size = '10%', pad = 0)
+fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
+                    wspace=0.4, hspace=0.1)
+cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
+norm = colors.Normalize(vmin = 0, vmax = ColorMax)
+cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
+cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
+axs[-1].set_xlabel('x (cm)')
+plt.show()
 
 
     
