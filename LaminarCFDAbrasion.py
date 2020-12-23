@@ -420,7 +420,8 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # =============================================================================
 # This is where the grainsize is selected by user
 # =============================================================================
-diam = 5 * np.logspace(-4, 0.5, 21)
+grain_diam_max = 2.5  # cm
+diam = grain_diam_max * np.logspace(-3.5, 0, 9)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -434,10 +435,9 @@ for D in diam:
         grain = 'silt'
     elif D >= 0.0063 and D < 0.2:
         grain = 'sand'
-    elif D >= 0.2 and D < 6.4:
-        grain = 'pebbles'
-    elif D >= 6.4:
-        grain = 'cobbles'
+    elif D >= 0.2:
+        grain = 'gravel'
+
     
     rho_quartz = 2.65  # g*cm^-3
     rho_water = 1
@@ -520,24 +520,51 @@ axs.set_ylabel('Average partticle kinetic energy per impact (ergs)')
 
 ### total energy plot 
 fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-axs.semilogy((diam * 10), TotalImpactEnergy)
+axs.semilogy((diam * 10), TotalImpactEnergy*10**-7)
 axs.set_xlabel('Grain diameter (mm)')
-axs.set_ylabel('Total impact energy over length of one scallop (ergs)') 
+axs.set_ylabel('Total impact energy over length of one scallop (Joules)') 
 
 # impact location & energy-at-location plot
 
 GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
 ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
 
+from matplotlib import colors
+
+from matplotlib import cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+
+
+my_colors = cm.get_cmap('cool', 256)
+
 for j in range(len(diam)):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    if diam[j] < 0.0063:
+        grain = 'silt'
+    elif diam[j] >= 0.0063 and D < 0.2:
+        grain = 'sand'
+    elif diam[j] >= 0.2:
+        grain = 'gravel'
+    axs.set_xlim(10, 20)
     axs.plot(x0, z0, 'grey')
     EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
-    findColors = np.log10(EnergyAtImpact[j, :])    
-    axs.scatter(XAtImpact[j, :], ZAtImpact[j, :], c = (findColors/np.min(ColorScheme)))
+    findColors = (np.log10(EnergyAtImpact[j, :]))/6 
+    impact_dots = axs.scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
+    
+    #legend
+    divider = make_axes_locatable(axs)
+
+    cax = divider.append_axes('right', size = '5%', pad = 0)
+    norm = colors.Normalize(vmin = 0, vmax = 6)
+
+    cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cax)
+    cax.set_ylabel('log10 of kinetic energy of impact in ergs')
+
     axs.set_ylabel('z (cm)')
     axs.set_xlabel('x (cm)')
     axs.set_title('Locations of impacting ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on 5 cm floor scallops, dot color scales with particle kinetic energy')
+    plt.show()
 
 
     

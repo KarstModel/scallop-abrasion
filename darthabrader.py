@@ -224,7 +224,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             
             if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
                 impact_data[i, :5] = sediment_location[h+1]
-                print('impact!')
+                #print('impact!')
                 break
             
                             
