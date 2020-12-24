@@ -121,8 +121,9 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # =============================================================================
 # This is where the grainsize is selected by user
 # =============================================================================
-grain_diam_max = 2.5  # cm
-diam = grain_diam_max * np.logspace(-3, 0, 9)
+grain_diam_max = 0.25 # cm
+grain_diam_min = 0.1
+diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, 21)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -244,39 +245,45 @@ ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent 
 ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
 ColorMax = np.ceil(np.max(ColorNumbers))
 
+divisor = 3
+n = int(len(diam)/divisor)
 my_colors = cm.get_cmap('cool', 256)
-fig, axs = plt.subplots(nrows = len(diam), ncols = 1, figsize = (11,26))
+fig, axs = plt.subplots(nrows = n, ncols = 1, figsize = (11,26))
 
 for j in range(len(diam)):
-    
-    if diam[j] < 0.0063:
-        grain = 'silt'
-    elif diam[j] >= 0.0063 and D < 0.2:
-        grain = 'sand'
-    elif diam[j] >= 0.2:
-        grain = 'gravel'
-    axs[j].set_xlim(15, 25)
-    axs[j].set_ylim(-0.5, 1.5)
-    axs[j].set_aspect('equal')
-    axs[j].plot(x0, z0, 'grey')
-    EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
-    findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
-    impact_dots = axs[j].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
-    
-    
+    if (j % divisor) == 0:
+        p = int(j/divisor)
+        if diam[j] < 0.0063:
+            grain = 'silt'
+        elif diam[j] >= 0.0063 and D < 0.2:
+            grain = 'sand'
+        elif diam[j] >= 0.2:
+            grain = 'gravel'
+        axs[p].set_xlim(15, 25)
+        axs[p].set_ylim(-0.5, 1.5)
+        axs[p].set_aspect('equal')
+        axs[p].plot(x0, z0, 'grey')
+        EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
+        findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
+        impact_dots = axs[p].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )  
 
-    axs[j].set_ylabel('z (cm)')
-    
-    axs[j].set_title('Locations of impact, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops, color indicates particle kinetic energy')
+        axs[p].set_ylabel('z (cm)')
+        axs[p].set_title('Locations of impact, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops, color indicates particle kinetic energy')
+    else:
+        continue
+
 #legend
-fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
-                    wspace=0.4, hspace=0.1)
+fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8, wspace=0.4, hspace=0.1)
 cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
 norm = colors.Normalize(vmin = 0, vmax = ColorMax)
 cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
 cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
 axs[-1].set_xlabel('x (cm)')
 plt.show()
+
+
+        
+    
 
 # =============================================================================
 # Two different ways to get erosion rate due to abrasion:
@@ -344,7 +351,7 @@ for j in range(len(diam)):
     axs.set_ylabel('Erosion rate (mg/(cm^2*day))')
     axs.set_xlabel('x (cm)')
     
-    axs.set_title('Erosion rate ala BW3, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops')
+    axs.set_title('Erosion rate ala BW3, D = ' + str(round(diam[j]*10, 3)) + ' mm, on floor scallops')
 
 plt.show()
 
@@ -371,6 +378,6 @@ for j in range(len(diam)):
     axs.set_ylabel('Erosion rate (mg/(cm^2*day))')
     axs.set_xlabel('dz/dx')
     
-    axs.set_title('Erosion rate ala BW3, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' v. floor scallop local slope')
+    axs.set_title('Erosion rate ala BW3, D = ' + str(round(diam[j]*10, 3)) + ' mm, v. floor scallop local slope')
 
 plt.show()
