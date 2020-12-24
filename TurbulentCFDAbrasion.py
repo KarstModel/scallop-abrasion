@@ -126,6 +126,8 @@ diam = grain_diam_max * np.logspace(-3, 0, 9)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
+ErosionAtImpact = np.empty(shape = (len(diam), len(x0)))
+
 i = 0
 for D in diam:
     xi = np.linspace(0, 1, 5)
@@ -141,6 +143,7 @@ for D in diam:
 
     
     rho_quartz = 2.65  # g*cm^-3
+    rho_ls = 2.55
     rho_water = 1
     Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
     mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
@@ -176,6 +179,10 @@ for D in diam:
     EnergyAtImpact[i, :] = impact_data[:, 6]
     XAtImpact[i, :] = impact_data[:, 1]
     ZAtImpact[i, :] = impact_data[:, 2]
+    
+    B = 9.4075*10**-12  # s**2·cm**-2
+    ErosionAtImpact[i, :] = B * (impact_data[:, 5])**3    ##Lamb et al., 2008
+    
     i += 1
     
     # trajectory figure
@@ -227,17 +234,15 @@ axs.set_ylabel('Total impact energy over length of one scallop (Joules)')
 
 # impact location & energy-at-location plot
 
+
+
+from matplotlib import colors
+from matplotlib import cm
+
 GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
 ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
 ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
 ColorMax = np.ceil(np.max(ColorNumbers))
-
-from matplotlib import colors
-
-from matplotlib import cm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-
 
 my_colors = cm.get_cmap('cool', 256)
 fig, axs = plt.subplots(nrows = len(diam), ncols = 1, figsize = (11,26))
@@ -264,8 +269,6 @@ for j in range(len(diam)):
     
     axs[j].set_title('Locations of impact, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops, color indicates particle kinetic energy')
 #legend
-divider = make_axes_locatable(axs[int((len(diam)-1)/2)])
-#cax = divider.append_axes('right', size = '10%', pad = 0)
 fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
                     wspace=0.4, hspace=0.1)
 cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
@@ -275,5 +278,99 @@ cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
 axs[-1].set_xlabel('x (cm)')
 plt.show()
 
+# =============================================================================
+# Two different ways to get erosion rate due to abrasion:
+    # 1. Work-energy theorem: work done on limestone = change in kinetic energy of sandstone grain
+    # 2. Erosion rate due to abrasion expression from Lamb et al. (2008). 
+# =============================================================================
 
+
+
+
+# ### 1. WORK-ENERGY THEOREM (these results are very much the wrong order of magnitude)
+# CoR = 0.4    #coefficient of restitution for sandstone impinging on limestone
+# WorkDoneAtImpact = EnergyAtImpact * (1 - CoR)   #work done on limestone, work-energy theorem
+
+# for j in range(len(diam)):
+#     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     
+#     mlr = (np.pi * rho_ls * diam[j]**3)/6    # mass limestone removed
+#     dv_dt = WorkDoneAtImpact/(mlr * diam[j])
+#     E_we = dv_dt * rho_ls * 24 * 3600  # convert cm*s**-1 to g*cm**-2*day*-1
+    
+#     if diam[j] < 0.0063:
+#         grain = 'silt'
+#     elif diam[j] >= 0.0063 and D < 0.2:
+#         grain = 'sand'
+#     elif diam[j] >= 0.2:
+#         grain = 'gravel'
+#     axs.set_xlim(15, 25)
+
+#     #axs.set_aspect('equal')
+#     axs.plot(x0, (E_we[j]))
+   
+    
+#     axs.set_xlim(15, 25)
+#     axs.set_ylabel('Erosion rate (g/(cm^2*day))')
+#     axs.set_xlabel('x (cm)')
+    
+#     axs.set_title('Erosion rate by work-energy theorem, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops')
+
+# plt.show()
+
+### 2. BUFFALO WILD WINGS AND WECK
+
+for j in range(len(diam)):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    
+    E_bw3 = -(ErosionAtImpact[j, :] * rho_ls * 24 * 3600 * 1000)  # convert Lamb et al. (2008) units to Hammer et al. (2011) units
+    for k in range(len(E_bw3)):                                  # cm*s**-1 to mg*cm**-2*day**-1
+        if E_bw3[k] < 0:
+            E_bw3[k] = 0
+    
+    if diam[j] < 0.0063:
+        grain = 'silt'
+    elif diam[j] >= 0.0063 and D < 0.2:
+        grain = 'sand'
+    elif diam[j] >= 0.2:
+        grain = 'gravel'
+    axs.set_xlim(15, 25)
+
+    #axs.set_aspect('equal')
+    axs.scatter(x0, E_bw3)
+   
+    
+    axs.set_xlim(15, 25)
+    axs.set_ylabel('Erosion rate (mg/(cm^2*day))')
+    axs.set_xlabel('x (cm)')
+    
+    axs.set_title('Erosion rate ala BW3, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops')
+
+plt.show()
+
+
+### Plot erosion rate (BW3 approach) v. scallop surface slope    
+for j in range(len(diam)):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    
+    E_bw3 = -(ErosionAtImpact[j, :] * rho_ls * 24 * 3600 * 1000)  # convert Lamb et al. (2008) units to Hammer et al. (2011) units
+    for k in range(len(E_bw3)):                                  # cm*s**-1 to mg*cm**-2*day**-1
+        if E_bw3[k] < 0:
+            E_bw3[k] = 0
+    
+    if diam[j] < 0.0063:
+        grain = 'silt'
+    elif diam[j] >= 0.0063 and D < 0.2:
+        grain = 'sand'
+    elif diam[j] >= 0.2:
+        grain = 'gravel'
+
+    axs.scatter(theta2, E_bw3)
+   
+
+    axs.set_ylabel('Erosion rate (mg/(cm^2*day))')
+    axs.set_xlabel('dz/dx')
+    
+    axs.set_title('Erosion rate ala BW3, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' v. floor scallop local slope')
+
+plt.show()
