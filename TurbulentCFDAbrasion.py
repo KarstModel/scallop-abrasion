@@ -126,6 +126,8 @@ diam = grain_diam_max * np.logspace(-3, 0, 9)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
+ErosionAtImpact = np.empty(shape = (len(diam), len(x0)))
+
 i = 0
 for D in diam:
     xi = np.linspace(0, 1, 5)
@@ -176,6 +178,10 @@ for D in diam:
     EnergyAtImpact[i, :] = impact_data[:, 6]
     XAtImpact[i, :] = impact_data[:, 1]
     ZAtImpact[i, :] = impact_data[:, 2]
+    
+    # B = 9.4075*10**-12  # s**2·cm**-2
+    # ErosionAtImpact[i, :] = B * (impact_data[:, 5])**3    ##Lamb et al., 2008
+    
     i += 1
     
     # trajectory figure
@@ -227,17 +233,15 @@ axs.set_ylabel('Total impact energy over length of one scallop (Joules)')
 
 # impact location & energy-at-location plot
 
+
+
+from matplotlib import colors
+from matplotlib import cm
+
 GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
 ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
 ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
 ColorMax = np.ceil(np.max(ColorNumbers))
-
-from matplotlib import colors
-
-from matplotlib import cm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-
 
 my_colors = cm.get_cmap('cool', 256)
 fig, axs = plt.subplots(nrows = len(diam), ncols = 1, figsize = (11,26))
@@ -264,8 +268,6 @@ for j in range(len(diam)):
     
     axs[j].set_title('Locations of impact, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops, color indicates particle kinetic energy')
 #legend
-divider = make_axes_locatable(axs[int((len(diam)-1)/2)])
-#cax = divider.append_axes('right', size = '10%', pad = 0)
 fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
                     wspace=0.4, hspace=0.1)
 cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
@@ -273,6 +275,34 @@ norm = colors.Normalize(vmin = 0, vmax = ColorMax)
 cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
 cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
 axs[-1].set_xlabel('x (cm)')
+plt.show()
+
+###plot wear rates along scallops
+CoR = 0.4    #coefficient of restitution for sandstone impinging on limestone
+WearAtImpact = EnergyAtImpact * (1 - CoR)   #work done on limestone, work-energy theorem
+
+#fig, axs = plt.subplots(nrows = len(diam), ncols = 1, figsize = (11,26))
+
+for j in range(len(diam)):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+
+    if diam[j] < 0.0063:
+        grain = 'silt'
+    elif diam[j] >= 0.0063 and D < 0.2:
+        grain = 'sand'
+    elif diam[j] >= 0.2:
+        grain = 'gravel'
+    axs.set_xlim(15, 25)
+
+    #axs.set_aspect('equal')
+    axs.plot(x0, (WearAtImpact[j, :]))
+   
+    
+
+    axs.set_ylabel('Wear')
+    
+    axs.set_title('Locations of impact, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops, color indicates particle kinetic energy')
+
 plt.show()
 
 
