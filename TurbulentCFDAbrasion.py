@@ -121,8 +121,8 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # =============================================================================
 # This is where the grainsize is selected by user
 # =============================================================================
-grain_diam_max = 0.25 # cm
-grain_diam_min = 0.1
+grain_diam_max = 2.5 # cm
+grain_diam_min = 0.01
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, 21)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -357,6 +357,8 @@ plt.show()
 
 
 ### Plot erosion rate (BW3 approach) v. scallop surface slope    
+
+
 for j in range(len(diam)):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     
@@ -379,5 +381,56 @@ for j in range(len(diam)):
     axs.set_xlabel('dz/dx')
     
     axs.set_title('Erosion rate ala BW3, D = ' + str(round(diam[j]*10, 3)) + ' mm, v. floor scallop local slope')
+
+plt.show()
+
+
+
+
+### Plot abrasion and dissolution regimes
+
+E_bw3_array = np.zeros(shape=(len(diam), len(x0)))
+
+array_lengths = np.zeros_like(diam)
+
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+plt.semilogy()
+
+for j in range(len(diam)):
+    E_bw3_array[j, :] = -(ErosionAtImpact[j, :] * rho_ls * 24 * 3600 * 1000)  # convert Lamb et al. (2008) units to Hammer et al. (2011) units
+    PositiveErosion = E_bw3_array[j, :][E_bw3_array[j, :] > 0]                                  # cm*s**-1 to mg*cm**-2*day**-1
+    test = len(PositiveErosion)
+    array_lengths[j] = test
+max_length = np.max(array_lengths)
+ErosionRanges = np.zeros(shape=(int(max_length), len(diam)))
+for k in range(len(diam)):
+    E_bw3_array[k, :] = -(ErosionAtImpact[k, :] * rho_ls * 24 * 3600 * 1000)  # convert Lamb et al. (2008) units to Hammer et al. (2011) units
+    PositiveErosion = E_bw3_array[k, :][E_bw3_array[k, :] > 0] 
+    column_length = len(PositiveErosion)
+    ErosionRanges[:column_length, k] = PositiveErosion
+
+# rectangular box plot for abrasional domains
+bplot1 = axs.boxplot(ErosionRanges,
+                     vert=True,  # vertical box alignment
+                     patch_artist=False,  # fill with color
+                     labels=np.around(diam/5, 2), showfliers = True)  # will be used to label x-ticks
+# 'fill-between' for dissolutional domain
+diss_min = 5.75
+diss_max = 8.5
+x = ErosionRanges[0, :]/25
+plt.fill_between(x, diss_min, diss_max, alpha = 0.8, color = 'grey')
+axs.set_title('Erosional regimes over scallops')
+axs.set_xlabel('ratio of grain size to crest-to-crest scallop length')
+axs.set_ylabel('erosion rate (mg/(cm^2*day))')
+axs.yaxis.grid(True)
+
+# # fill with colors
+# colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'b', 'g', 'r', 'c', 'm', 'y', 'k','b', 'g', 'r', 'c', 'm', 'y', 'k']
+# for bplot in range(len(diam)):
+#     for patch, color in zip(bplot, colors):
+#         patch.set_facecolor(color)
+
+
+
 
 plt.show()
