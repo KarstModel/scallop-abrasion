@@ -177,6 +177,7 @@ for D in diam:
     ImpactEnergyAvg[i] = ImpactEnergyTotalAvg/NumberImpacts 
     TotalImpactEnergy[i] = np.sum(impact_data[300:401, 6])
     AverageVelocities = np.empty_like(diam)
+    MaxVelocities = np.empty_like(diam)
       
     EnergyAtImpact[i, :] = impact_data[:, 6]
     XAtImpact[i, :] = impact_data[:, 1]
@@ -187,6 +188,7 @@ for D in diam:
     
     #of the grains, that have recorded impact, those with negative impact velocities are directed into the scalloped surface
     AverageVelocities[i]= np.average(impact_data[:,5][impact_data[:,5]<0])
+    MaxVelocities[i] = -np.min(impact_data[:,5])
     
     i += 1
     
@@ -237,11 +239,23 @@ for D in diam:
 # axs.set_xlabel('Grain diameter (mm)')
 # axs.set_ylabel('Total impact energy over length of one scallop (Joules)') 
 
-# ### average velocities plot 
-# fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-# axs.semilogy((diam * 10), AverageVelocities)
-# axs.set_xlabel('Grain diameter (mm)')
-# axs.set_ylabel('Average particle velocity at impact') 
+### average velocities plot 
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+Stokes = (1.65 * 981/(18*0.01307))*diam**2 
+vel_idx = np.where(AverageVelocities<0)
+vel_idx = np.delete(vel_idx, -1)
+axs.scatter((diam[vel_idx] * 10), -AverageVelocities[vel_idx], label = 'simulated impact velocity')
+axs.plot(diam*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
+#axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
+line_fit=np.polyfit(np.log10(diam[vel_idx] * 10), -AverageVelocities[vel_idx], deg=1, full=True)
+y = (line_fit[0][0])*(np.log10(diam[vel_idx]*10)) + (line_fit[0][1])
+axs.plot((diam[vel_idx]*10), y, c = 'r', label = 'fit curve')
+#axs.semilogx()
+plt.legend()
+axs.set_xlabel('grain diameter (mm)')
+axs.set_ylabel('velocity (cm/s)') 
+axs.set_title('Particle velocities')
+plt.show()
 
 # # impact location & energy-at-location plot
 
@@ -256,7 +270,7 @@ ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))]
 ColorMax = np.ceil(np.max(ColorNumbers))
 
 n = 6
-divisor = int(len(diam)/n)
+divisor = np.ceil(len(diam)/n)
 my_colors = cm.get_cmap('cool', 256)
 fig, axs = plt.subplots(nrows = 3, ncols = 2, figsize = (11,26))
 
@@ -439,33 +453,53 @@ plt.show()
 fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
 
 ErosionSum = np.zeros_like(diam)
+NormErosionAvg = np.zeros_like(diam)
+NumberOfImpactsByGS = np.zeros_like(diam)
 for r in range(len(diam)):
-    ErosionSum[r] = -np.sum(ErosionAtImpact[r, 200:301]*10*36*24*365.25)
-axs.scatter((diam*10), (ErosionSum))
+    ErosionSum[r] = -np.sum(ErosionAtImpact[r, 200:301][ErosionAtImpact[r, 200:301]<0]*1000*36*24*365.25)
+    NumberPositives = len(ErosionAtImpact[r, 200:301][ErosionAtImpact[r, 200:301]<0])
+    NumberOfImpactsByGS[r] = NumberPositives
+    if NumberPositives > 0:
+        NormErosionAvg[r] = ErosionSum[r]/NumberPositives
+    else:
+        NormErosionAvg[r] = 0
 
-first = len(diam)-len(ErosionSum[ErosionSum > 0])
-line_fit=np.polyfit(np.log10(diam[first:]*10), np.log10(ErosionSum[ErosionSum > 0]), deg=1, full=True)
-y = (line_fit[0][0])*(np.log10(diam*10)) + (line_fit[0][1])
-#y = 3*(np.log10(diam*10)) -1.8
+NumerousImpacts = NumberOfImpactsByGS[NumberOfImpactsByGS>=5]
+impact_idx = np.where(NumberOfImpactsByGS>=5)
+NumImpDiam = diam[impact_idx]
+NormNumErosion = NormErosionAvg[impact_idx]
+    
+axs.scatter(NumImpDiam*10, NormNumErosion)
+#axs.scatter((diam*10), (NormErosionAvg))
+#axs.scatter(diam, NumberOfImpactsByGS)
 
-TSS = 0 #total sum of squares
-sum_abs = 0
-for s in range(len(ErosionSum[ErosionSum > 0])):
-    square = (np.log10(ErosionSum[ErosionSum > 0][s]) - np.average(np.log10(ErosionSum[ErosionSum > 0])))**2
-    diff_abs = np.abs(np.log10(ErosionSum[ErosionSum > 0][s]) - np.average(np.log10(ErosionSum[ErosionSum > 0])))
-    TSS = TSS + square
-    sum_abs = sum_abs +diff_abs
-sigma=np.sqrt(TSS/len(ErosionSum[ErosionSum > 0]))
-numerator= (np.sqrt(np.pi/2))*sum_abs/(len(ErosionSum[ErosionSum > 0]))
-Gearys_test = numerator/sigma          #### confirm that data is log-normally distributed
+# first = len(diam)-len(ErosionSum[ErosionSum > 0])
+# line_fit=np.polyfit(np.log10(diam[first:]*10), np.log10(ErosionSum[ErosionSum > 0]), deg=1, full=True)
+# y = (line_fit[0][0])*(np.log10(diam*10)) + (line_fit[0][1])
+# #y = 3*(np.log10(diam*10)) -1.8
+# ErosionSum[ErosionSum > 0]
+
+# TSS = 0 #total sum of squares
+# sum_abs = 0
+# for s in range(len(ErosionSum[ErosionSum > 0])):
+#     square = (np.log10(ErosionSum[ErosionSum > 0][s]) - np.average(np.log10(ErosionSum[ErosionSum > 0])))**2
+#     diff_abs = np.abs(np.log10(ErosionSum[ErosionSum > 0][s]) - np.average(np.log10(ErosionSum[ErosionSum > 0])))
+#     TSS = TSS + square
+#     sum_abs = sum_abs +diff_abs
+# sigma=np.sqrt(TSS/len(ErosionSum[ErosionSum > 0]))
+# numerator= (np.sqrt(np.pi/2))*sum_abs/(len(ErosionSum[ErosionSum > 0]))
+# Gearys_test = numerator/sigma          #### confirm that data is log-normally distributed
 
 
-axs.plot((diam*10), 10**y, 'r')
+#axs.plot((diam*10), 10**y, 'r')
 
-plt.semilogy()
+#plt.semilogy()
 plt.semilogx()
-axs.set_ylim(10**-2, 10**3)
-axs.set_title('Average Abrasion Rate')
-axs.set_xlabel('Particle grain size (mm)')
-axs.set_ylabel('erosion rate (mm/yr)')
+# axs.set_ylim(10**-1, 10**3)
+axs.set_xlim(0.9, 40)
+axs.set_title('Abrasion Rate Normalized by Number of Impacts (>=5)')
+axs.set_xlabel('particle grain size (mm)')
+axs.set_ylabel('abrasional erosion rate (mm/yr)')
+axs.grid(True, which = 'both', axis = 'both')
+
 plt.show()
