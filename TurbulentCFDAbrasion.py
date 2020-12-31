@@ -122,7 +122,7 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # This is where the grainsize is selected by user
 # =============================================================================
 grain_diam_max = 2.5 # cm
-grain_diam_min = 0.1
+grain_diam_min = 0.12
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, 6)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -232,6 +232,7 @@ for D in diam:
 ### average velocities plot 
 fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
 Stokes = (1.65 * 981/(18*0.01307))*diam**2 
+w_s = da.settling_velocity(rho_quartz, rho_water, 1, diam, 1)
 vel_idx = np.where(AverageVelocities<0)
 vel_idx = np.delete(vel_idx, -1)
 axs.scatter((diam[vel_idx] * 10), -AverageVelocities[vel_idx], label = 'simulated impact velocity')
@@ -246,65 +247,14 @@ axs.set_ylabel('velocity (cm/s)')
 axs.set_title('Particle velocities')
 plt.show()
 
-
-
-# # impact location & energy-at-location plot
-
-from matplotlib import colors
-from matplotlib import cm
-
-GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
-ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
-ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
-ColorMax = np.ceil(np.max(ColorNumbers))
-
-my_colors = cm.get_cmap('cool', 256)
-fig, axs = plt.subplots(nrows = len(diam), ncols = 1, sharex=True, figsize = (11, 17))
-
-for j in range(len(diam)):
-    
-    if diam[j] < 0.0063:
-        grain = 'silt'
-    elif diam[j] >= 0.0063 and D < 0.2:
-        grain = 'sand'
-    elif diam[j] >= 0.2:
-        grain = 'gravel'
-    axs[j].set_xlim(15, 25)
-    axs[j].set_ylim(-0.5, 1.5)
-    axs[j].set_aspect('equal')
-    axs[j].plot(x0, z0, 'grey')
-    EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
-    findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
-    impact_dots = axs[j].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
-    
-    
-
-    axs[j].set_ylabel('z (cm)')
-    
-    axs[j].set_title('Locations of impact, ' + str(round(diam[j]*10, 3)) + ' mm '+ grain +' on floor scallops, color indicates particle kinetic energy')
-#legend
-fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
-                    wspace=0.4, hspace=0.1)
-cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
-norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
-cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
-axs[-1].set_xlabel('x (cm)')
-plt.show()
-
-
-        
-    
+ 
+  
 
 # # =============================================================================
 # # Two different ways to get erosion rate due to abrasion:
 #     # 1. Work-energy theorem: work done on limestone = change in kinetic energy of sandstone grain
 #     # 2. Erosion rate due to abrasion expression from Lamb et al. (2008). 
 # # =============================================================================
-
-
-
-
 # # ### 1. WORK-ENERGY THEOREM (these results are very much the wrong order of magnitude)
 # # CoR = 0.4    #coefficient of restitution for sandstone impinging on limestone
 # # WorkDoneAtImpact = EnergyAtImpact * (1 - CoR)   #work done on limestone, work-energy theorem
@@ -460,11 +410,11 @@ axs.scatter(NumImpDiam*10, NormNumErosion)
 #axs.scatter((diam*10), (NormErosionAvg))
 #axs.scatter(NumImpDiam*10, NumerousImpacts)
 
-first = len(diam)-len(ErosionSum[ErosionSum > 0])
-line_fit=np.polyfit(np.log10(diam[first:]*10), np.log10(ErosionSum[ErosionSum > 0]), deg=1, full=True)
-y = (line_fit[0][0])*(np.log10(diam*10)) + (line_fit[0][1])
-#y = 3*(np.log10(diam*10)) -1.8
-axs.plot((diam*10), 10**y, 'r')
+# first = len(diam)-len(ErosionSum[ErosionSum > 0])
+# line_fit=np.polyfit(np.log10(diam[first:]*10), np.log10(ErosionSum[ErosionSum > 0]), deg=1, full=True)
+# y = (line_fit[0][0])*(np.log10(diam*10)) + (line_fit[0][1])
+# #y = 3*(np.log10(diam*10)) -1.8
+# axs.plot((diam*10), 10**y, 'r')
 
 # TSS = 0 #total sum of squares
 # sum_abs = 0
@@ -488,4 +438,60 @@ axs.set_ylabel('abrasional erosion rate (mm/yr)')
 # axs.set_ylabel('number of impacts')
 # #axs.grid(True, which = 'both', axis = 'both')
 
+plt.show()
+
+
+
+# # impact location & energy-at-location plot
+
+from matplotlib import colors
+from matplotlib import cm
+
+GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
+ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
+ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
+ColorMax = np.ceil(np.max(ColorNumbers))
+KESum = np.zeros_like(diam)
+KEAvg = np.zeros_like(diam)
+NumKE = np.zeros_like(diam)
+
+my_colors = cm.get_cmap('cool', 256)
+fig, axs = plt.subplots(nrows = len(diam), ncols = 1, sharex=True, figsize = (11, 17))
+
+for j in range(len(diam)):
+    
+    if diam[j] < 0.0063:
+        grain = 'silt'
+    elif diam[j] >= 0.0063 and D < 0.2:
+        grain = 'sand'
+    elif diam[j] >= 0.2:
+        grain = 'gravel'
+    axs[j].set_xlim(15, 25)
+    axs[j].set_ylim(-0.5, 1.5)
+    axs[j].set_aspect('equal')
+    axs[j].plot(x0, z0, 'grey')
+    EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
+    findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
+    impact_dots = axs[j].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
+    
+    KESum[j] = np.sum(EnergyAtImpact[j, 200:301][EnergyAtImpact[j, 200:301]>0])
+    NumPos = len(EnergyAtImpact[j, 200:301][EnergyAtImpact[j, 200:301]>0])
+    NumKE[j] = NumPos
+    if NumberPositives > 0:
+        KEAvg[j] = KESum[j]/NumPos
+    else:
+        KEAvg[j] = 0
+    
+
+    axs[j].set_ylabel('z (cm)')
+    
+    axs[j].set_title('D = ' +str(round(diam[j]*10, 2)) + ' mm                     avg.KE = ' + str(round(KEAvg[j],2)) + ' ergs')
+#legend
+fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
+                    wspace=0.4, hspace=0.1)
+cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
+norm = colors.Normalize(vmin = 0, vmax = ColorMax)
+cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
+cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
+axs[-1].set_xlabel('x (cm)')
 plt.show()
