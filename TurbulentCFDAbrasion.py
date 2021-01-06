@@ -15,6 +15,7 @@ import darthabrader as da
 from dragcoeff import dragcoeff
 from numpy import genfromtxt
 
+
 # ## assumptions
 # 
 # 1. sediment concentration uniform in x, one grain begins at each x-index location at height of bedload
@@ -129,6 +130,8 @@ XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
 ErosionAtImpact = np.empty(shape = (len(diam), len(x0)))
 VelocityAtImpact = np.empty(shape = (len(diam), len(x0)))
+ParticleDrag = np.empty_like(diam)
+ParticleReynolds = np.empty_like(diam)
 
 i = 0
 for D in diam:
@@ -169,7 +172,7 @@ for D in diam:
     
     # In[10]:
     
-    impact_data, loc_data = da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water)
     
     ImpactEnergyAvg = np.empty_like(diam)
     TotalImpactEnergy = np.empty_like(diam)
@@ -179,6 +182,10 @@ for D in diam:
     TotalImpactEnergy[i] = np.sum(impact_data[300:401, 6])
     AverageVelocities = np.empty_like(diam)
     MaxVelocities = np.empty_like(diam)
+    
+    ParticleDrag[i] = np.average(impact_data[:, 8])
+    
+    ParticleReynolds[i] = np.average(impact_data[:, 7])
       
     EnergyAtImpact[i, :] = impact_data[:, 6]
     XAtImpact[i, :] = impact_data[:, 1]
@@ -243,8 +250,9 @@ axs.plot(diam*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church
 #axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
 line_fit_1=np.polyfit(np.log10(diam * 10), VelocityAvg, deg=1, full=True)
 y = (line_fit_1[0][0])*(np.log10(diam*10)) + (line_fit_1[0][1])
-axs.plot((diam*10), y, c = 'r', label = 'fit curve, log(impact velocity) = ')
+axs.plot((diam*10), y, c = 'r', label = 'fit curve, impact velocity = 46.1log(D) -1.81')
 plt.legend()
+#plt.semilogx()
 axs.set_xlabel('grain diameter (mm)')
 axs.set_ylabel('velocity (cm/s)') 
 axs.set_title('Particle velocities')
@@ -461,7 +469,27 @@ axs.grid(True, which = 'both', axis = 'both')
 
 plt.show()
 
+### check for drag crisis
+fig, ax1 = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+plt.semilogx()
+plt.semilogy()
 
+color = 'tab:red'
+ax1.set_xlabel('particle grainsize (mm)')
+ax1.set_ylabel('drag coefficient at impact', color='b')
+ax1.scatter(diam*10, ParticleDrag, color = 'b')
+ax1.tick_params(axis='y', labelcolor='b')
+
+ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+plt.semilogy()
+
+color = 'tab:blue'
+ax2.set_ylabel('Particle Reynolds Number at impact', color='r')  # we already handled the x-label with ax1
+ax2.scatter(diam*10, ParticleReynolds, color='r')
+ax2.tick_params(axis='y', labelcolor='r')
+
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.show()
 
 # # # impact location & energy-at-location plot
 
@@ -516,3 +544,18 @@ plt.show()
 # cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
 # axs[-1].set_xlabel('x (cm)')
 # plt.show()
+
+#####save all data
+np.savetxt('VelocityAtImpact.csv',VelocityAtImpact,delimiter=",")
+np.savetxt('ImpactEnergyAvg.csv',ImpactEnergyAvg,delimiter=",")
+np.savetxt('VelocityAvg.csv',VelocityAvg,delimiter=",")
+np.savetxt('EnergyAtImpact.csv',EnergyAtImpact,delimiter=",")
+np.savetxt('XAtImpact.csv',XAtImpact,delimiter=",")
+np.savetxt('ZAtImpact.csv',ZAtImpact,delimiter=",")
+np.savetxt('ErosionAtImpact.csv',ErosionAtImpact,delimiter=",")
+np.savetxt('AverageVelocities.csv',AverageVelocities,delimiter=",")
+np.savetxt('MaxVelocities.csv',MaxVelocities,delimiter=",")
+np.savetxt('diam.csv',diam,delimiter=",")
+np.savetxt('TotalImpactEnergy.csv',TotalImpactEnergy,delimiter=",")
+np.savetxt('ParticleDrag.csv',ParticleDrag,delimiter=",")
+np.savetxt('ParticleReynolds.csv',ParticleReynolds,delimiter=",")
