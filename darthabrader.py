@@ -139,7 +139,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
 
         
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
-    impact_data = np.zeros(shape=(len(x0), 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
+    impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
     location_data = []
     # define machine epsilon threshold
@@ -252,8 +252,64 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         else:
             impact_data[i, 6] += 0 
         
-        location_data.append(sediment_location)   # store trajectory for plotting
+# for intuitive-looking trajectory plotting, draw the trajectories through the scallops:
+        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > 0:        #while that particle is in transport in the water
+          
+            t += dt
+        # get current indices -  this should be the previous h, above
+            x_idx = np.rint((sediment_location[h, 1]/0.05))                
+                
+            if sediment_location[h, 2] <= 5:
+                z_idx = np.rint((sediment_location[h, 2]/0.05))
+            else:
+                z_idx = 100
+            
+            wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
+            
+        # make sure result of squaring wrel is above machine precision
+            if np.abs(wrel) > eps2:                                       
+                Re_p = particle_reynolds_number(D, wrel, mu_kin)
+                drag_coef = dragcoeff(Re_p)
+                a = -(1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+            else:
+                a = 0
+            
+            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
+            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
+            pi_u = drag * u_water[int(z_idx), int(x_idx)]
+            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
+            if pi_w < w_s:
+                pi_w = w_s
+            sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
         
+        # projected next 
+            try:
+                next_x_idx = np.int(np.rint((pi_x/0.05)))
+            except:
+                print('NaN in pi_x. this is fixed and should never happen again!')
+                next_x_idx = -9999
+                raise Exception
+                
+        #print ('next_x', next_x_idx)
+            if next_x_idx >= x0.size or next_x_idx < 0:
+            #print('out of bounds in lower zone!')
+                OOB_FLAG = True
+                break                        
+
+            
+            if next_x_idx > 0 and pi_z <= 0:
+                break
+            
+                            
+            if pi_z <= 5:
+                z_idx = np.int(np.rint((pi_z/0.05)))
+            else:
+                z_idx = 100
+            
+            h+=1
+            #print('h',h)
+
+        location_data.append(sediment_location)   # store trajectory for plotting        
         #print('bedload thickness = ', Hf)
         
     return impact_data, location_data
