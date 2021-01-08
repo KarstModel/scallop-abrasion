@@ -26,7 +26,9 @@ from numpy import genfromtxt
 
 plt.close('all')
 
-TurbVel = genfromtxt('TurbulentFlowfield.csv', delimiter=',')
+l32 = 5 # sauter-mean scallop length in cm
+
+TurbVel = genfromtxt('TurbulentFlowfield' + str(l32) + '.csv', delimiter=',')
 
 # variable declarations
 nx = 101
@@ -122,9 +124,10 @@ theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 # =============================================================================
 # This is where the grainsize is selected by user
 # =============================================================================
-grain_diam_max = 2.5 # cm
-grain_diam_min = 0.12
-diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, 10000)
+
+grain_diam_max = 0.5 * l32 
+grain_diam_min = 0.02 * l32
+diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, 4)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -201,17 +204,19 @@ for D in diam:
     
     i += 1
     
-#     # trajectory figure
-#     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-#     axs.set_xlim(15, 25)
-#     axs.set_aspect('equal')
-#     axs.plot (x0, z0, 'grey')
-#     ld = np.array(loc_data, dtype=object)
-#     for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
-#         axs.plot(p[:,1], p[:,2], 2, 'blue')
-#     axs.set_ylabel('z (cm)')
-#     axs.set_xlabel('x (cm)')
-#     axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
+    # trajectory figure
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+    axs.set_xlim(15, 25)
+    axs.set_ylim(0, 9)
+    axs.set_aspect('equal')
+    axs.plot (x0, z0, 'grey')
+    ld = np.array(loc_data, dtype=object)
+    for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
+        axs.plot(p[:,1], p[:,2], 2, 'blue')
+    plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey', zorder=101)
+    axs.set_ylabel('z (cm)')
+    axs.set_xlabel('x (cm)')
+    axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on ' +str(l32)+ ' cm floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
     
 #     # velocity exploration
 #     ###histogram of last recorded velocities of all particles
@@ -238,36 +243,36 @@ for D in diam:
 
 
 
-### average velocities plot 
-fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-#Stokes = (1.65 * 981/(18*0.01307))*diam**2 
-w_s = da.settling_velocity(rho_quartz, rho_water, 1, diam, 1)
-VelocityAvg = np.zeros_like(diam)
-for r in range(len(diam)):
-    VelocityAvg[r] = -np.average(VelocityAtImpact[r, 200:301][VelocityAtImpact[r, 200:301]<0])
-axs.scatter((diam * 10), VelocityAvg, label = 'simulated impact velocity')
-axs.plot(diam*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
-#axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
-line_fit_1=np.polyfit(np.log10(diam * 10), VelocityAvg, deg=1, full=True)
-y = (line_fit_1[0][0])*(np.log10(diam*10)) + (line_fit_1[0][1])
-axs.plot((diam*10), y, c = 'r', label = 'fit curve, impact velocity = 46.1log(D) -1.81')
-plt.legend()
-#plt.semilogx()
-axs.set_xlabel('grain diameter (mm)')
-axs.set_ylabel('velocity (cm/s)') 
-axs.set_title('Particle velocities')
-plt.show()
+# ### average velocities plot 
+# fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+# #Stokes = (1.65 * 981/(18*0.01307))*diam**2 
+# w_s = da.settling_velocity(rho_quartz, rho_water, 1, diam, 1)
+# VelocityAvg = np.zeros_like(diam)
+# for r in range(len(diam)):
+#     VelocityAvg[r] = -np.average(VelocityAtImpact[r, 200:301][VelocityAtImpact[r, 200:301]<0])
+# axs.scatter((diam * 10), VelocityAvg, label = 'simulated impact velocity')
+# axs.plot(diam*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
+# #axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
+# line_fit_1=np.polyfit(np.log10(diam * 10), VelocityAvg, deg=1, full=True)
+# y = (line_fit_1[0][0])*(np.log10(diam*10)) + (line_fit_1[0][1])
+# axs.plot((diam*10), y, c = 'r', label = 'fit curve, impact velocity = 46.1log(D) -1.81')
+# plt.legend()
+# #plt.semilogx()
+# axs.set_xlabel('grain diameter (mm)')
+# axs.set_ylabel('velocity (cm/s)') 
+# axs.set_title('Particle velocities')
+# plt.show()
 
-TSS = 0 #total sum of squares
-sum_abs = 0
-for s in range(len(VelocityAvg)):
-    square = (np.log10(VelocityAvg[s]) - np.average(np.log10(VelocityAvg)))**2
-    diff_abs = np.abs(np.log10(VelocityAvg[s]) - np.average(np.log10(VelocityAvg)))
-    TSS = TSS + square
-    sum_abs = sum_abs +diff_abs
-sigma=np.sqrt(TSS/len(VelocityAvg))
-numerator= (np.sqrt(np.pi/2))*sum_abs/(len(VelocityAvg))
-Gearys_test_Vel = numerator/sigma          #### confirm that data is log-normally distributed
+# TSS = 0 #total sum of squares
+# sum_abs = 0
+# for s in range(len(VelocityAvg)):
+#     square = (np.log10(VelocityAvg[s]) - np.average(np.log10(VelocityAvg)))**2
+#     diff_abs = np.abs(np.log10(VelocityAvg[s]) - np.average(np.log10(VelocityAvg)))
+#     TSS = TSS + square
+#     sum_abs = sum_abs +diff_abs
+# sigma=np.sqrt(TSS/len(VelocityAvg))
+# numerator= (np.sqrt(np.pi/2))*sum_abs/(len(VelocityAvg))
+# Gearys_test_Vel = numerator/sigma          #### confirm that data is log-normally distributed
 
  
   
@@ -408,154 +413,154 @@ Gearys_test_Vel = numerator/sigma          #### confirm that data is log-normall
 # plt.show()
 
 
-####Total abrasion Over One Scallop
-fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+# ####Total abrasion Over One Scallop
+# fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
 
-ErosionSum = np.zeros_like(diam)
-NormErosionAvg = np.zeros_like(diam)
-NumberOfImpactsByGS = np.zeros_like(diam)
-for r in range(len(diam)):
-    ErosionSum[r] = -np.sum(ErosionAtImpact[r, 200:301][ErosionAtImpact[r, 200:301]<0]*1000*36*24*365.25)
-    NumberPositives = len(ErosionAtImpact[r, 200:301][ErosionAtImpact[r, 200:301]<0])
-    NumberOfImpactsByGS[r] = NumberPositives
-    if NumberPositives > 0:
-        NormErosionAvg[r] = ErosionSum[r]/NumberPositives
-    else:
-        NormErosionAvg[r] = 0
+# ErosionSum = np.zeros_like(diam)
+# NormErosionAvg = np.zeros_like(diam)
+# NumberOfImpactsByGS = np.zeros_like(diam)
+# for r in range(len(diam)):
+#     ErosionSum[r] = -np.sum(ErosionAtImpact[r, 200:301][ErosionAtImpact[r, 200:301]<0]*1000*36*24*365.25)
+#     NumberPositives = len(ErosionAtImpact[r, 200:301][ErosionAtImpact[r, 200:301]<0])
+#     NumberOfImpactsByGS[r] = NumberPositives
+#     if NumberPositives > 0:
+#         NormErosionAvg[r] = ErosionSum[r]/NumberPositives
+#     else:
+#         NormErosionAvg[r] = 0
 
-NumerousImpacts = NumberOfImpactsByGS[NumberOfImpactsByGS>=5]
-impact_idx = np.where(NumberOfImpactsByGS>=5)
-NumImpDiam = diam[impact_idx]
-NormNumErosion = NormErosionAvg[impact_idx]
+# NumerousImpacts = NumberOfImpactsByGS[NumberOfImpactsByGS>=5]
+# impact_idx = np.where(NumberOfImpactsByGS>=5)
+# NumImpDiam = diam[impact_idx]
+# NormNumErosion = NormErosionAvg[impact_idx]
     
-#axs.scatter(NumImpDiam*10, NormNumErosion)
-axs.scatter((diam*10), (NormErosionAvg), label = 'simulated abrasional erosion')
-#axs.scatter(NumImpDiam*10, NumerousImpacts)
+# #axs.scatter(NumImpDiam*10, NormNumErosion)
+# axs.scatter((diam*10), (NormErosionAvg), label = 'simulated abrasional erosion')
+# #axs.scatter(NumImpDiam*10, NumerousImpacts)
 
 # diss_min = 5.66    #minimum dissolution rate (mm/yr) (Grm et al., 2017)
 # diss_max = 12.175  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
 # x = np.linspace(0.9, 3)
 # plt.fill_between(x, diss_min, diss_max, alpha = 0.6, color = 'r')
 
-first = len(diam)-len(NormErosionAvg[NormErosionAvg > 0])
-line_fit_2=np.polyfit(np.log10(diam[first:]*10), np.log10(NormErosionAvg[NormErosionAvg > 0]), deg=1, full=True)
-y = (line_fit_2[0][0])*(np.log10(diam*10)) + (line_fit_2[0][1])
-#y = 3*(np.log10(diam*10)) -1.8
-axs.plot((diam*10), 10**y, 'r', label = 'fit curve, log(E_A) = ')
+# first = len(diam)-len(NormErosionAvg[NormErosionAvg > 0])
+# line_fit_2=np.polyfit(np.log10(diam[first:]*10), np.log10(NormErosionAvg[NormErosionAvg > 0]), deg=1, full=True)
+# y = (line_fit_2[0][0])*(np.log10(diam*10)) + (line_fit_2[0][1])
+# #y = 3*(np.log10(diam*10)) -1.8
+# axs.plot((diam*10), 10**y, 'r', label = 'fit curve, log(E_A) = ')
 
-TSS = 0 #total sum of squares
-sum_abs = 0
-for s in range(len(NormErosionAvg[NormErosionAvg > 0])):
-    square = (np.log10(NormErosionAvg[NormErosionAvg > 0][s]) - np.average(np.log10(NormErosionAvg[NormErosionAvg > 0])))**2
-    diff_abs = np.abs(np.log10(NormErosionAvg[NormErosionAvg > 0][s]) - np.average(np.log10(NormErosionAvg[NormErosionAvg > 0])))
-    TSS = TSS + square
-    sum_abs = sum_abs +diff_abs
-sigma=np.sqrt(TSS/len(NormErosionAvg[NormErosionAvg > 0]))
-numerator= (np.sqrt(np.pi/2))*sum_abs/(len(NormErosionAvg[NormErosionAvg > 0]))
-Gearys_test_EA = numerator/sigma          #### confirm that data is log-normally distributed
+# TSS = 0 #total sum of squares
+# sum_abs = 0
+# for s in range(len(NormErosionAvg[NormErosionAvg > 0])):
+#     square = (np.log10(NormErosionAvg[NormErosionAvg > 0][s]) - np.average(np.log10(NormErosionAvg[NormErosionAvg > 0])))**2
+#     diff_abs = np.abs(np.log10(NormErosionAvg[NormErosionAvg > 0][s]) - np.average(np.log10(NormErosionAvg[NormErosionAvg > 0])))
+#     TSS = TSS + square
+#     sum_abs = sum_abs +diff_abs
+# sigma=np.sqrt(TSS/len(NormErosionAvg[NormErosionAvg > 0]))
+# numerator= (np.sqrt(np.pi/2))*sum_abs/(len(NormErosionAvg[NormErosionAvg > 0]))
+# Gearys_test_EA = numerator/sigma          #### confirm that data is log-normally distributed
 
-plt.semilogx()
-plt.legend(loc = 'center left')
-#plt.semilogy()
-# axs.set_ylim(30,200)
-axs.set_xlim(.9,30)
-axs.set_title('Abrasion Rate Normalized by Number of Impacts (>=5)')
-axs.set_xlabel('particle grainsize (mm)')
-axs.set_ylabel('abrasional erosion rate (mm/yr)')
-# axs.set_title('Number of Impacts on One Scallop')
-# axs.set_xlabel('particle grain size (mm)')
-# axs.set_ylabel('number of impacts')
-axs.grid(True, which = 'both', axis = 'both')
+# plt.semilogx()
+# plt.legend(loc = 'center left')
+# #plt.semilogy()
+# # axs.set_ylim(30,200)
+# axs.set_xlim(.9,30)
+# axs.set_title('Abrasion Rate Normalized by Number of Impacts (>=5)')
+# axs.set_xlabel('particle grainsize (mm)')
+# axs.set_ylabel('abrasional erosion rate (mm/yr)')
+# # axs.set_title('Number of Impacts on One Scallop')
+# # axs.set_xlabel('particle grain size (mm)')
+# # axs.set_ylabel('number of impacts')
+# axs.grid(True, which = 'both', axis = 'both')
 
-plt.show()
-
-### check for drag crisis
-fig, ax1 = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-plt.semilogx()
-plt.semilogy()
-
-color = 'tab:red'
-ax1.set_xlabel('particle grainsize (mm)')
-ax1.set_ylabel('drag coefficient at impact', color='b')
-ax1.scatter(diam*10, ParticleDrag, color = 'b')
-ax1.tick_params(axis='y', labelcolor='b')
-
-ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-plt.semilogy()
-
-color = 'tab:blue'
-ax2.set_ylabel('Particle Reynolds Number at impact', color='r')  # we already handled the x-label with ax1
-ax2.scatter(diam*10, ParticleReynolds, color='r')
-ax2.tick_params(axis='y', labelcolor='r')
-
-fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.show()
-
-# # # impact location & energy-at-location plot
-
-# from matplotlib import colors
-# from matplotlib import cm
-
-# GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
-# ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
-# ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
-# ColorMax = np.ceil(np.max(ColorNumbers))
-# KESum = np.zeros_like(diam)
-# KEAvg = np.zeros_like(diam)
-# NumKE = np.zeros_like(diam)
-
-# my_colors = cm.get_cmap('cool', 256)
-# fig, axs = plt.subplots(nrows = len(diam), ncols = 1, sharex=True, figsize = (11, 17))
-
-# for j in range(len(diam)):
-    
-#     if diam[j] < 0.0063:
-#         grain = 'silt'
-#     elif diam[j] >= 0.0063 and D < 0.2:
-#         grain = 'sand'
-#     elif diam[j] >= 0.2:
-#         grain = 'gravel'
-#     axs[j].set_xlim(15, 25)
-#     axs[j].set_ylim(-0.5, 1.5)
-#     axs[j].set_aspect('equal')
-#     axs[j].plot(x0, z0, 'grey')
-#     EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
-#     findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
-#     impact_dots = axs[j].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
-    
-#     KESum[j] = np.sum(EnergyAtImpact[j, 200:301][EnergyAtImpact[j, 200:301]>0])
-#     NumPos = len(EnergyAtImpact[j, 200:301][EnergyAtImpact[j, 200:301]>0])
-#     NumKE[j] = NumPos
-#     if NumberPositives > 0:
-#         KEAvg[j] = KESum[j]/NumPos
-#     else:
-#         KEAvg[j] = 0
-    
-
-#     axs[j].set_ylabel('z (cm)')
-    
-#     axs[j].set_title('D = ' +str(round(diam[j]*10, 2)) + ' mm                     avg.KE = ' + str(round(KEAvg[j],2)) + ' ergs')
-# #legend
-# fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
-#                     wspace=0.4, hspace=0.1)
-# cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
-# norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-# cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
-# cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
-# axs[-1].set_xlabel('x (cm)')
 # plt.show()
 
-#####save all data
-np.savetxt('VelocityAtImpact.csv',VelocityAtImpact,delimiter=",")
-np.savetxt('ImpactEnergyAvg.csv',ImpactEnergyAvg,delimiter=",")
-np.savetxt('VelocityAvg.csv',VelocityAvg,delimiter=",")
-np.savetxt('EnergyAtImpact.csv',EnergyAtImpact,delimiter=",")
-np.savetxt('XAtImpact.csv',XAtImpact,delimiter=",")
-np.savetxt('ZAtImpact.csv',ZAtImpact,delimiter=",")
-np.savetxt('ErosionAtImpact.csv',ErosionAtImpact,delimiter=",")
-np.savetxt('AverageVelocities.csv',AverageVelocities,delimiter=",")
-np.savetxt('MaxVelocities.csv',MaxVelocities,delimiter=",")
-np.savetxt('diam.csv',diam,delimiter=",")
-np.savetxt('TotalImpactEnergy.csv',TotalImpactEnergy,delimiter=",")
-np.savetxt('ParticleDrag.csv',ParticleDrag,delimiter=",")
-np.savetxt('ParticleReynolds.csv',ParticleReynolds,delimiter=",")
+# ### check for drag crisis
+# fig, ax1 = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+# plt.semilogx()
+# plt.semilogy()
+
+# color = 'tab:red'
+# ax1.set_xlabel('particle grainsize (mm)')
+# ax1.set_ylabel('drag coefficient at impact', color='b')
+# ax1.scatter(diam*10, ParticleDrag, color = 'b')
+# ax1.tick_params(axis='y', labelcolor='b')
+
+# ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+# plt.semilogy()
+
+# color = 'tab:blue'
+# ax2.set_ylabel('Particle Reynolds Number at impact', color='r')  # we already handled the x-label with ax1
+# ax2.scatter(diam*10, ParticleReynolds, color='r')
+# ax2.tick_params(axis='y', labelcolor='r')
+
+# fig.tight_layout()  # otherwise the right y-label is slightly clipped
+# plt.show()
+
+# # # # impact location & energy-at-location plot
+
+# # from matplotlib import colors
+# # from matplotlib import cm
+
+# # GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
+# # ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
+# # ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
+# # ColorMax = np.ceil(np.max(ColorNumbers))
+# # KESum = np.zeros_like(diam)
+# # KEAvg = np.zeros_like(diam)
+# # NumKE = np.zeros_like(diam)
+
+# # my_colors = cm.get_cmap('cool', 256)
+# # fig, axs = plt.subplots(nrows = len(diam), ncols = 1, sharex=True, figsize = (11, 17))
+
+# # for j in range(len(diam)):
+    
+# #     if diam[j] < 0.0063:
+# #         grain = 'silt'
+# #     elif diam[j] >= 0.0063 and D < 0.2:
+# #         grain = 'sand'
+# #     elif diam[j] >= 0.2:
+# #         grain = 'gravel'
+# #     axs[j].set_xlim(15, 25)
+# #     axs[j].set_ylim(-0.5, 1.5)
+# #     axs[j].set_aspect('equal')
+# #     axs[j].plot(x0, z0, 'grey')
+# #     EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
+# #     findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
+# #     impact_dots = axs[j].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
+    
+# #     KESum[j] = np.sum(EnergyAtImpact[j, 200:301][EnergyAtImpact[j, 200:301]>0])
+# #     NumPos = len(EnergyAtImpact[j, 200:301][EnergyAtImpact[j, 200:301]>0])
+# #     NumKE[j] = NumPos
+# #     if NumberPositives > 0:
+# #         KEAvg[j] = KESum[j]/NumPos
+# #     else:
+# #         KEAvg[j] = 0
+    
+
+# #     axs[j].set_ylabel('z (cm)')
+    
+# #     axs[j].set_title('D = ' +str(round(diam[j]*10, 2)) + ' mm                     avg.KE = ' + str(round(KEAvg[j],2)) + ' ergs')
+# # #legend
+# # fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
+# #                     wspace=0.4, hspace=0.1)
+# # cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
+# # norm = colors.Normalize(vmin = 0, vmax = ColorMax)
+# # cbar = plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
+# # cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
+# # axs[-1].set_xlabel('x (cm)')
+# # plt.show()
+
+# #####save all data
+# np.savetxt('VelocityAtImpact.csv',VelocityAtImpact,delimiter=",")
+# np.savetxt('ImpactEnergyAvg.csv',ImpactEnergyAvg,delimiter=",")
+# np.savetxt('VelocityAvg.csv',VelocityAvg,delimiter=",")
+# np.savetxt('EnergyAtImpact.csv',EnergyAtImpact,delimiter=",")
+# np.savetxt('XAtImpact.csv',XAtImpact,delimiter=",")
+# np.savetxt('ZAtImpact.csv',ZAtImpact,delimiter=",")
+# np.savetxt('ErosionAtImpact.csv',ErosionAtImpact,delimiter=",")
+# np.savetxt('AverageVelocities.csv',AverageVelocities,delimiter=",")
+# np.savetxt('MaxVelocities.csv',MaxVelocities,delimiter=",")
+# np.savetxt('diam.csv',diam,delimiter=",")
+# np.savetxt('TotalImpactEnergy.csv',TotalImpactEnergy,delimiter=",")
+# np.savetxt('ParticleDrag.csv',ParticleDrag,delimiter=",")
+# np.savetxt('ParticleReynolds.csv',ParticleReynolds,delimiter=",")
