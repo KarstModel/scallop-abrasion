@@ -15,6 +15,8 @@ import darthabrader as da
 from dragcoeff import dragcoeff
 from numpy import genfromtxt
 
+### user input: scallop crest-to-crest length in centimeters
+
 
 # ## assumptions
 # 
@@ -26,23 +28,39 @@ from numpy import genfromtxt
 
 plt.close('all')
 
-l32 = 5 # sauter-mean scallop length in cm
+# building the initial scallop array
+l32 = 2.5 # sauter-mean scallop length in cm
 
-TurbVel = genfromtxt('TurbulentFlowfield' + str(l32) + '.csv', delimiter=',')
+numScal = 6  #number of scallops
+xmax = 6
+dx0 = 0.05/l32
+xScal = np.arange(0, xmax+dx0,dx0)  #x-array for scallop field
+uScal = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
+
+
+x0, z0 = da.scallop_array(xScal, uScal, numScal, l32)   #initial scallop profile, dimensions in centimeters
+z0 = z0 - np.min(z0)
+cH = np.max(z0)   # crest height
+dzdx = np.gradient(z0, x0)
+theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
+
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+axs.set_aspect('equal')
+axs.set_ylim(0,0.4)
+axs.plot (x0, z0, 'grey')
+
+
+
+TurbVel = genfromtxt('TurbulentFlowfield2-5.csv', delimiter=',')
 
 # variable declarations
-nx = 101
-ny = 101
-nt = 10
-nit = 50 
-c = 1
-dx = 2 / (nx - 1)
-dy = 2 / (ny - 1)
-new_x = np.linspace(0, 5, nx)
-new_z = np.linspace(0, 5, ny)
+nx = l32*20 + 1
+ny = l32*20 + 1
+new_x = np.linspace(0, 5, int(nx))
+new_z = np.linspace(0, 5, int(ny))
 new_X, new_Z = np.meshgrid(new_x, new_z)
-new_u = np.zeros((ny, nx))
-new_w = np.zeros((ny, nx))
+new_u = np.zeros((int(ny), int(nx)))
+new_w = np.zeros((int(ny), int(nx)))
 
 #restructure STAR-CCM+ turbulent flow data set
 for i in range(len(TurbVel)):
@@ -56,8 +74,11 @@ holes_and_wall_u = np.where(new_u == 0)
 ux_zero = np.array(holes_and_wall_u[1])
 uz_zero = np.array(holes_and_wall_u[0])
 
+#find the bottom of the trough
+max_min = np.where(dzdx > 0)[0]
+
 for j in range(len(ux_zero)):
-    if (ux_zero[j] > 0 & ux_zero[j] <= 40):
+    if (ux_zero[j] > 0 & ux_zero[j] <= max_min[0]):
         if (ux_zero[j] - ux_zero[j-1]) > 1:   #this is a hole in the lee-side data set
             hole_z = np.int(uz_zero[j])
             hole_x = np.int(ux_zero[j])
@@ -104,17 +125,7 @@ for i in range(a):
 # In[5]:
 
 
-# building the initial scallop array
 
-xmax = 6  #number of scallops
-dx = 0.01
-xScal = np.arange(0, xmax+dx,dx)  #x-array for scallop field
-uScal = np.arange(0,1+dx,dx)  #x-array for a single scallop
-
-
-x0, z0 = da.scallop_array(xScal, uScal, xmax)   #initial scallop profile, dimensions in centimeters
-dzdx = np.gradient(z0, x0)
-theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 
 
 # In[6]:
@@ -155,7 +166,7 @@ for D in diam:
     rho_water = 1
     Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
     mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
-    L = 5    # cm, crest-to-crest scallop length
+    L = l32    # cm, crest-to-crest scallop length
     
     
     
@@ -175,7 +186,7 @@ for D in diam:
     
     # In[10]:
     
-    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water, cH)
     
     ImpactEnergyAvg = np.empty_like(diam)
     TotalImpactEnergy = np.empty_like(diam)
@@ -206,8 +217,8 @@ for D in diam:
     
     # trajectory figure
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    axs.set_xlim(15, 25)
-    axs.set_ylim(0, 9)
+    #axs.set_xlim(15, 25)
+    #axs.set_ylim(0, 9)
     axs.set_aspect('equal')
     axs.plot (x0, z0, 'grey')
     ld = np.array(loc_data, dtype=object)
