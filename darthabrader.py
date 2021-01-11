@@ -90,8 +90,9 @@ def scallop_array_one(x_array, number_of_scallops):
    
     return y
 
-def scallop_array(x_array, one_period, number_of_scallops):
+def scallop_array(x_array, one_period, number_of_scallops, crest_to_crest_scallop_length):
     
+    l32 = crest_to_crest_scallop_length
     z = np.zeros(x_array.shape)
     period = len(one_period)-1
     n = number_of_scallops 
@@ -101,8 +102,8 @@ def scallop_array(x_array, one_period, number_of_scallops):
             v =-((0.112 * np.sin(np.pi * one_period)) + (0.028 * np.sin(2 * np.pi * one_period)) - (0.004 * np.sin(3 * np.pi * one_period)))    #(Blumberg and Curl, 1974)
             z[i*period + j] = v[j]
     
-    x = (x_array/number_of_scallops) * 30
-    z = 0.7 + z*5
+    x = x_array *l32
+    z = z*l32
 
     return x, z
 
@@ -124,7 +125,7 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx, theta2, mu_kin):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx, theta2, mu_kin, crest_height):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
@@ -134,19 +135,19 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     
     #calculate bedload height as function of grain size (Wilson, 1987)
     xi = np.linspace(0, 1, 5)
-    delta = 0.7 + (0.5 + 3.5 * xi)*D
+    delta = crest_height + (0.5 + 3.5 * xi)*D
     Hf = delta[1]
 
         
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
-    impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
+    impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
     dt = dx / u_w0
     location_data = []
     # define machine epsilon threshold
     eps2=np.sqrt( u_w0*np.finfo(float).eps )
 
     
-    for i in range(len(x0)):    #begin one particle at reast at each x-position at its fall height (Hf per Lamb et al., 2008)
+    for i in range(len(x0)):    #begin one particle at rest at each x-position at its fall height (Hf per Wilson, 1987)
         h = 0
         t = 0
         OOB_FLAG = False
@@ -175,7 +176,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         # near-ground portion, with drag
         while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
             t += dt
-            # get current indices -  this should be the previous h, above
+            # get current location with respect to computational mesh -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
                 
             if sediment_location[h, 2] <= 5:
