@@ -15,7 +15,7 @@ import darthabrader as da
 from dragcoeff import dragcoeff
 from numpy import genfromtxt
 
-### user input: scallop crest-to-crest length in centimeters
+# =============================================================================
 
 
 # ## assumptions
@@ -28,9 +28,20 @@ from numpy import genfromtxt
 
 plt.close('all')
 
-# building the initial scallop array
-l32 = 2.5 # sauter-mean scallop length in cm
 
+# ### user input: 
+# =============================================================================
+l32 = 2.5 # sauter-mean scallop length in cm
+flowfield_data_filename = 'TurbulentFlowfield2-5.csv'
+
+
+
+
+
+
+
+
+# building the initial scallop array
 numScal = 6  #number of scallops
 xmax = 6
 dx0 = 0.05/l32
@@ -50,14 +61,13 @@ axs.set_ylim(0,0.4)
 axs.plot (x0, z0, 'grey')
 
 
-
-TurbVel = genfromtxt('TurbulentFlowfield2-5.csv', delimiter=',')
+TurbVel = genfromtxt(flowfield_data_filename, delimiter=',')
 
 # variable declarations
 nx = l32*20 + 1
 ny = l32*20 + 1
-new_x = np.linspace(0, 5, int(nx))
-new_z = np.linspace(0, 5, int(ny))
+new_x = np.linspace(0, l32, int(nx))
+new_z = np.linspace(0, l32, int(ny))
 new_X, new_Z = np.meshgrid(new_x, new_z)
 new_u = np.zeros((int(ny), int(nx)))
 new_w = np.zeros((int(ny), int(nx)))
@@ -68,35 +78,36 @@ for i in range(len(TurbVel)):
     z_index = np.int(TurbVel[i, 1])
     new_u[z_index, x_index] = TurbVel[i, 2]
     new_w[z_index, x_index] = TurbVel[i, 3]
+ 
+if np.any(new_u == -9999):    
+    #identify holes in data set and patch them    
+    holes_and_wall_u = np.where(new_u == -9999)
+    ux_zero = np.array(holes_and_wall_u[1])
+    uz_zero = np.array(holes_and_wall_u[0])
     
-#identify holes in data set and patch them    
-holes_and_wall_u = np.where(new_u == 0)
-ux_zero = np.array(holes_and_wall_u[1])
-uz_zero = np.array(holes_and_wall_u[0])
-
-#find the bottom of the trough
-max_min = np.where(dzdx > 0)[0]
-
-for j in range(len(ux_zero)):
-    if (ux_zero[j] > 0 & ux_zero[j] <= max_min[0]):
-        if (ux_zero[j] - ux_zero[j-1]) > 1:   #this is a hole in the lee-side data set
-            hole_z = np.int(uz_zero[j])
-            hole_x = np.int(ux_zero[j])
-            new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
-            new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
-        else:
-            continue        #this is a wall boundary, no action needed
-    elif (ux_zero[j] > 40 & ux_zero[j] < 100):
-        if (ux_zero[j + 1] - ux_zero[j]) > 1:   #this is a hole in the stoss-side data set
-            hole_z = np.int(uz_zero[j])
-            hole_x = np.int(ux_zero[j])
-            new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
-            new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
-        else:
-            continue        #this is a wall boundary, no action needed
-    else:
-        continue      # this is also inside the wall   
+    #find the bottom of the trough
+    max_min = np.where(dzdx > 0)[0]
     
+    for j in range(len(ux_zero)):
+        if (ux_zero[j] > 0 & ux_zero[j] <= max_min[0]):
+            if (ux_zero[j] - ux_zero[j-1]) > 1:   #this is a hole in the lee-side data set
+                hole_z = np.int(uz_zero[j])
+                hole_x = np.int(ux_zero[j])
+                new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
+                new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
+            else:
+                continue        #this is a wall boundary, no action needed
+        elif (ux_zero[j] > 40 & ux_zero[j] < 100):
+            if (ux_zero[j + 1] - ux_zero[j]) > 1:   #this is a hole in the stoss-side data set
+                hole_z = np.int(uz_zero[j])
+                hole_x = np.int(ux_zero[j])
+                new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
+                new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
+            else:
+                continue        #this is a wall boundary, no action needed
+        else:
+            continue      # this is also inside the wall   
+
 
 fig = plt.figure(figsize=(11, 7), dpi=100)
 plt.contourf(new_X, new_Z, np.sqrt(new_u**2 + new_w**2), alpha = 0.5)
@@ -110,8 +121,8 @@ plt.ylabel('Z');
 
 # six-scallop long velocity matrix
 
-u_water = np.empty(shape=(101,601))
-w_water = np.empty(shape=(101,601))
+u_water = np.empty(shape=(int(len(uScal)),int(len(xScal))))
+w_water = np.empty(shape=(int(len(uScal)),int(len(xScal))))
 
 a = 6
 b = len(new_u) - 1
@@ -121,20 +132,11 @@ for i in range(a):
     for j in range(b):   
         u_water[:, i*b + j] = new_u[:, j]
         w_water[:, i*b + j] = new_w[:, j]
-        
-# In[5]:
-
-
-
-
 
 # In[6]:
 
 
 # definitions and parameters
-# =============================================================================
-# This is where the grainsize is selected by user
-# =============================================================================
 
 grain_diam_max = 0.5 * l32 
 grain_diam_min = 0.02 * l32
@@ -150,7 +152,7 @@ ParticleReynolds = np.empty_like(diam)
 i = 0
 for D in diam:
     xi = np.linspace(0, 1, 5)
-    delta = 0.7 + (0.5 + 3.5 * xi)*D
+    delta = cH + (0.5 + 3.5 * xi)*D
     Hf = delta[1]
     
     if D < 0.0063:
