@@ -108,15 +108,13 @@ def scallop_array(x_array, one_period, number_of_scallops, crest_to_crest_scallo
     return x, z
 
 
-def settling_velocity(rho_sediment, rho_fluid, drag_coef, grain_size, fall_distance):
+def settling_velocity(rho_sediment, rho_fluid, grain_size):
     R = (rho_sediment/rho_fluid - 1)
     g = 981 # cm*s^-2
     D = grain_size
     nu = 0.01307  # g*cm^-1*s^-1
-    #C = drag_coef
     C_1 = 18
     C_2 = 1
-    #w_s = np.sqrt((4*R*g*D)/(3*C))
     w_s = -(R*g*D**2)/((C_1*nu)+np.sqrt(0.75*C_2*R*g*D**3))
     
     return w_s
@@ -125,7 +123,7 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx, theta2, mu_kin, crest_height):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx, theta2, mu_kin, crest_height, scallop_length):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
@@ -141,7 +139,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
-    dt = dx / u_w0
+    #dt = dx / u_w0
+    dt = dx / (2*u_w0)
     location_data = []
     # define machine epsilon threshold
     eps2=np.sqrt( u_w0*np.finfo(float).eps )
@@ -156,7 +155,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
            #initial position for ith particle, # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w 
         
         # upper level of fall, ignores turbulent flow structure
-        while sediment_location[h, 2] >= 4:
+        while sediment_location[h, 2] >= (0.8 * scallop_length) :
             h += 1
             t += dt
             if i+h < (x0.size - 1):
@@ -179,10 +178,10 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             # get current location with respect to computational mesh -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
                 
-            if sediment_location[h, 2] <= 5:
+            if sediment_location[h, 2] <= scallop_length:
                 z_idx = np.rint((sediment_location[h, 2]/0.05))
             else:
-                z_idx = 100
+                z_idx = (scallop_length/.05)
             
             wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
             
@@ -202,6 +201,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             
             #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
             pi_u = drag * u_water[int(z_idx), int(x_idx)]
+            pi_u = sediment_location[h, 3] + drag * u_water[int(z_idx), int(x_idx)]
             pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
             if pi_w < w_s:
                 pi_w = w_s
@@ -232,7 +232,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             if pi_z <= 5:
                 z_idx = np.int(np.rint((pi_z/0.05)))
             else:
-                z_idx = 100
+                z_idx = scallop_length/.05
             
             h+=1
             #print('h',h)
@@ -260,10 +260,10 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         # get current indices -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
                 
-            if sediment_location[h, 2] <= 5:
+            if sediment_location[h, 2] <= 0.8*scallop_length:
                 z_idx = np.rint((sediment_location[h, 2]/0.05))
             else:
-                z_idx = 100
+                z_idx = scallop_length/.05
             
             wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
             
@@ -305,7 +305,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             if pi_z <= 5:
                 z_idx = np.int(np.rint((pi_z/0.05)))
             else:
-                z_idx = 100
+                z_idx = scallop_length/.05
             
             h+=1
             #print('h',h)
