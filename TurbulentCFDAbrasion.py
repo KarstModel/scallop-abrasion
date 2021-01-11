@@ -140,7 +140,7 @@ for i in range(a):
 
 grain_diam_max = 0.5 * l32 
 grain_diam_min = 0.02 * l32
-diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, 4)
+diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, 10000)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -177,18 +177,13 @@ for D in diam:
     
     
     u_w0 = (Re * mu_water) / (L * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
-    w_w0 = 1
     
-    Re_p = da.particle_reynolds_number(D, w_w0, mu_water/rho_water)
-    drag_coef = dragcoeff(Re_p)
-    print('drag_coef', drag_coef)
-    
-    w_s = da.settling_velocity(rho_quartz, rho_water, drag_coef, D, Hf) # DW 12/8: I think this calculation might assume things no longer true about the settling code
+    w_s = da.settling_velocity(rho_quartz, rho_water, D) # DW 12/8: I think this calculation might assume things no longer true about the settling code
                                 # RB 12/9: @DW, w_s is only used to calculate the trajectories in the upper fall where flow is assumed to be uniform
     
     # In[10]:
     
-    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water, cH)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water, cH, l32)
     
     ImpactEnergyAvg = np.empty_like(diam)
     TotalImpactEnergy = np.empty_like(diam)
@@ -219,8 +214,8 @@ for D in diam:
     
     # trajectory figure
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    #axs.set_xlim(15, 25)
-    #axs.set_ylim(0, 9)
+    axs.set_xlim(l32*3, l32*5)
+    axs.set_ylim(0, l32*2)
     axs.set_aspect('equal')
     axs.plot (x0, z0, 'grey')
     ld = np.array(loc_data, dtype=object)
@@ -256,25 +251,25 @@ for D in diam:
 
 
 
-# ### average velocities plot 
-# fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-# #Stokes = (1.65 * 981/(18*0.01307))*diam**2 
-# w_s = da.settling_velocity(rho_quartz, rho_water, 1, diam, 1)
-# VelocityAvg = np.zeros_like(diam)
-# for r in range(len(diam)):
-#     VelocityAvg[r] = -np.average(VelocityAtImpact[r, 200:301][VelocityAtImpact[r, 200:301]<0])
-# axs.scatter((diam * 10), VelocityAvg, label = 'simulated impact velocity')
-# axs.plot(diam*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
-# #axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
+### average velocities plot 
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+#Stokes = (1.65 * 981/(18*0.01307))*diam**2 
+w_s = da.settling_velocity(rho_quartz, rho_water, diam)
+VelocityAvg = np.zeros_like(diam)
+for r in range(len(diam)):
+    VelocityAvg[r] = -np.average(VelocityAtImpact[r, 200:301][VelocityAtImpact[r, 200:301]<0])
+axs.scatter((diam * 10), VelocityAvg, label = 'simulated impact velocity')
+axs.plot(diam*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
+#axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
 # line_fit_1=np.polyfit(np.log10(diam * 10), VelocityAvg, deg=1, full=True)
 # y = (line_fit_1[0][0])*(np.log10(diam*10)) + (line_fit_1[0][1])
 # axs.plot((diam*10), y, c = 'r', label = 'fit curve, impact velocity = 46.1log(D) -1.81')
-# plt.legend()
-# #plt.semilogx()
-# axs.set_xlabel('grain diameter (mm)')
-# axs.set_ylabel('velocity (cm/s)') 
-# axs.set_title('Particle velocities')
-# plt.show()
+plt.legend()
+#plt.semilogx()
+axs.set_xlabel('grain diameter (mm)')
+axs.set_ylabel('velocity (cm/s)') 
+axs.set_title('Particle velocities')
+plt.show()
 
 # TSS = 0 #total sum of squares
 # sum_abs = 0
