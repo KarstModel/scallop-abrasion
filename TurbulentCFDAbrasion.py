@@ -12,8 +12,9 @@ Created on Wed Dec 23 14:10:15 2020
 import numpy as np
 from matplotlib import pyplot as plt
 import darthabrader as da
-from dragcoeff import dragcoeff
 from numpy import genfromtxt
+
+# =============================================================================
 
 
 # ## assumptions
@@ -26,108 +27,62 @@ from numpy import genfromtxt
 
 plt.close('all')
 
-l32 = 5 # sauter-mean scallop length in cm
 
-TurbVel = genfromtxt('TurbulentFlowfield' + str(l32) + '.csv', delimiter=',')
+# ### user input: 
+# =============================================================================
+l32 = 5 # sauter-mean scallop length in cm
+n = 10000 # number of grainsizes to simulate in diameter array
+numScal = 24  #number of scallops
+
+
+
+# building the initial scallop array
+
+dx0 = 0.05/l32
+xScal = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
+uScal = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
+
+
+x0, z0 = da.scallop_array(xScal, uScal, numScal, l32)   #initial scallop profile, dimensions in centimeters
+z0 = z0 - np.min(z0)
+cH = np.max(z0)   # crest height
+dzdx = np.gradient(z0, x0)
+theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
+
+
+# import and process turbulent flow data set
+TurbVel = genfromtxt('TurbulentFlowfield'+str(l32)+'.csv', delimiter=',')
 
 # variable declarations
-nx = 101
-ny = 101
-nt = 10
-nit = 50 
-c = 1
-dx = 2 / (nx - 1)
-dy = 2 / (ny - 1)
-new_x = np.linspace(0, 5, nx)
-new_z = np.linspace(0, 5, ny)
+nx = l32*20 + 1
+ny = l32*20 + 1
+new_x = np.linspace(0, l32/numScal, int(nx))
+new_z = np.linspace(0, l32/numScal, int(ny))
 new_X, new_Z = np.meshgrid(new_x, new_z)
-new_u = np.zeros((ny, nx))
-new_w = np.zeros((ny, nx))
+new_u = np.zeros((int(ny), int(nx)))
+new_w = np.zeros((int(ny), int(nx)))
 
-#restructure STAR-CCM+ turbulent flow data set
-for i in range(len(TurbVel)):
-    x_index = np.int(TurbVel[i, 0])
-    z_index = np.int(TurbVel[i, 1])
-    new_u[z_index, x_index] = TurbVel[i, 2]
-    new_w[z_index, x_index] = TurbVel[i, 3]
-    
-#identify holes in data set and patch them    
-holes_and_wall_u = np.where(new_u == 0)
-ux_zero = np.array(holes_and_wall_u[1])
-uz_zero = np.array(holes_and_wall_u[0])
+u_water, w_water = da.turbulent_flowfield(TurbVel, xScal, uScal, numScal, new_u, new_w)
 
-for j in range(len(ux_zero)):
-    if (ux_zero[j] > 0 & ux_zero[j] <= 40):
-        if (ux_zero[j] - ux_zero[j-1]) > 1:   #this is a hole in the lee-side data set
-            hole_z = np.int(uz_zero[j])
-            hole_x = np.int(ux_zero[j])
-            new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
-            new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
-        else:
-            continue        #this is a wall boundary, no action needed
-    elif (ux_zero[j] > 40 & ux_zero[j] < 100):
-        if (ux_zero[j + 1] - ux_zero[j]) > 1:   #this is a hole in the stoss-side data set
-            hole_z = np.int(uz_zero[j])
-            hole_x = np.int(ux_zero[j])
-            new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
-            new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
-        else:
-            continue        #this is a wall boundary, no action needed
-    else:
-        continue      # this is also inside the wall   
-    
 
 fig = plt.figure(figsize=(11, 7), dpi=100)
-plt.contourf(new_X, new_Z, np.sqrt(new_u**2 + new_w**2), alpha = 0.5)
+plt.contourf(new_X, new_Z, np.sqrt(new_u**2 + new_w[:len(new_u)]**2), alpha = 0.5)
 plt.colorbar()
 plt.title('Velocity magnitude, turbulent flow')
 plt.xlabel('X')
 plt.ylabel('Z');
 
-# In[4]:
 
-
-# six-scallop long velocity matrix
-
-u_water = np.empty(shape=(101,601))
-w_water = np.empty(shape=(101,601))
-
-a = 6
-b = len(new_u) - 1
-c = len(new_u) - 1
-
-for i in range(a):
-    for j in range(b):   
-        u_water[:, i*b + j] = new_u[:, j]
-        w_water[:, i*b + j] = new_w[:, j]
-        
-# In[5]:
-
-
-# building the initial scallop array
-
-xmax = 6  #number of scallops
-dx = 0.01
-xScal = np.arange(0, xmax+dx,dx)  #x-array for scallop field
-uScal = np.arange(0,1+dx,dx)  #x-array for a single scallop
-
-
-x0, z0 = da.scallop_array(xScal, uScal, xmax)   #initial scallop profile, dimensions in centimeters
-dzdx = np.gradient(z0, x0)
-theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 
 
 # In[6]:
 
 
 # definitions and parameters
-# =============================================================================
-# This is where the grainsize is selected by user
-# =============================================================================
 
 grain_diam_max = 0.5 * l32 
 grain_diam_min = 0.02 * l32
-diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, 4)
+diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
 ZAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -139,7 +94,7 @@ ParticleReynolds = np.empty_like(diam)
 i = 0
 for D in diam:
     xi = np.linspace(0, 1, 5)
-    delta = 0.7 + (0.5 + 3.5 * xi)*D
+    delta = cH + (0.5 + 3.5 * xi)*D
     Hf = delta[1]
     
     if D < 0.0063:
@@ -155,7 +110,6 @@ for D in diam:
     rho_water = 1
     Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
     mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
-    L = 5    # cm, crest-to-crest scallop length
     
     
     
@@ -163,25 +117,20 @@ for D in diam:
     # In[9]:
     
     
-    u_w0 = (Re * mu_water) / (L * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
-    w_w0 = 1
+    u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
     
-    Re_p = da.particle_reynolds_number(D, w_w0, mu_water/rho_water)
-    drag_coef = dragcoeff(Re_p)
-    print('drag_coef', drag_coef)
-    
-    w_s = da.settling_velocity(rho_quartz, rho_water, drag_coef, D, Hf) # DW 12/8: I think this calculation might assume things no longer true about the settling code
-                                # RB 12/9: @DW, w_s is only used to calculate the trajectories in the upper fall where flow is assumed to be uniform
+    w_s = da.settling_velocity(rho_quartz, rho_water, D) 
     
     # In[10]:
     
-    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water, cH, l32)
     
     ImpactEnergyAvg = np.empty_like(diam)
     TotalImpactEnergy = np.empty_like(diam)
     ImpactEnergyTotalAvg = np.average(impact_data[:, 6])
     NumberImpacts = np.count_nonzero(impact_data[:, 6])
-    ImpactEnergyAvg[i] = ImpactEnergyTotalAvg/NumberImpacts 
+    if (NumberImpacts == 0):
+        ImpactEnergyAvg[i] = ImpactEnergyTotalAvg/NumberImpacts 
     TotalImpactEnergy[i] = np.sum(impact_data[300:401, 6])
     AverageVelocities = np.empty_like(diam)
     MaxVelocities = np.empty_like(diam)
@@ -202,21 +151,22 @@ for D in diam:
     AverageVelocities[i]= np.average(impact_data[:,5][impact_data[:,5]<0])
     MaxVelocities[i] = -np.min(impact_data[:,5])
     
+    print('diam = ' + str(diam[i]) + ' cm')
     i += 1
     
-    # trajectory figure
-    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    axs.set_xlim(15, 25)
-    axs.set_ylim(0, 9)
-    axs.set_aspect('equal')
-    axs.plot (x0, z0, 'grey')
-    ld = np.array(loc_data, dtype=object)
-    for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
-        axs.plot(p[:,1], p[:,2], 2, 'blue')
-    plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey', zorder=101)
-    axs.set_ylabel('z (cm)')
-    axs.set_xlabel('x (cm)')
-    axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on ' +str(l32)+ ' cm floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
+    # # trajectory figure
+    # fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+    # axs.set_xlim(l32*numScal/2, (l32*numScal/2 + l32*2))
+    # axs.set_ylim(0, l32*2)
+    # axs.set_aspect('equal')
+    # axs.plot (x0, z0, 'grey')
+    # ld = np.array(loc_data, dtype=object)
+    # for p in ld[(np.random.randint(len(loc_data),size=50)).astype(int)]:
+    #     axs.plot(p[:,1], p[:,2], 2, 'blue')
+    # plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey', zorder=101)
+    # axs.set_ylabel('z (cm)')
+    # axs.set_xlabel('x (cm)')
+    # axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on ' +str(l32)+ ' cm floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
     
 #     # velocity exploration
 #     ###histogram of last recorded velocities of all particles
@@ -243,25 +193,29 @@ for D in diam:
 
 
 
-# ### average velocities plot 
-# fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-# #Stokes = (1.65 * 981/(18*0.01307))*diam**2 
-# w_s = da.settling_velocity(rho_quartz, rho_water, 1, diam, 1)
-# VelocityAvg = np.zeros_like(diam)
-# for r in range(len(diam)):
-#     VelocityAvg[r] = -np.average(VelocityAtImpact[r, 200:301][VelocityAtImpact[r, 200:301]<0])
-# axs.scatter((diam * 10), VelocityAvg, label = 'simulated impact velocity')
-# axs.plot(diam*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
-# #axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
+### average velocities plot 
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+#Stokes = (1.65 * 981/(18*0.01307))*diam**2 
+w_s = da.settling_velocity(rho_quartz, rho_water, diam)
+VelocityAvg = np.zeros_like(diam)
+for r in range(len(diam)):
+    VelocityAvg[r] = -np.average(VelocityAtImpact[r, 200:301][VelocityAtImpact[r, 200:301]<0])
+axs.scatter((diam /l32), VelocityAvg, label = 'simulated impact velocity on '+str(l32)+' cm scallops')
+axs.plot(diam/l32, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
+#axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
 # line_fit_1=np.polyfit(np.log10(diam * 10), VelocityAvg, deg=1, full=True)
 # y = (line_fit_1[0][0])*(np.log10(diam*10)) + (line_fit_1[0][1])
 # axs.plot((diam*10), y, c = 'r', label = 'fit curve, impact velocity = 46.1log(D) -1.81')
-# plt.legend()
-# #plt.semilogx()
-# axs.set_xlabel('grain diameter (mm)')
-# axs.set_ylabel('velocity (cm/s)') 
-# axs.set_title('Particle velocities')
-# plt.show()
+Diam5 = genfromtxt('diam5.csv', delimiter=',')
+Vels5 = genfromtxt('VelocityAvg5.csv', delimiter=',')
+axs.scatter((Diam5 /5), Vels5, label = 'simulated impact velocity on 5 cm scallops from data file', zorder = 0)
+plt.legend()
+plt.semilogx()
+#axs.set_xlim(0.01,0.4)
+axs.set_xlabel('grain diameter/scallop_length')
+axs.set_ylabel('velocity (cm/s)') 
+axs.set_title('Particle velocities')
+plt.show()
 
 # TSS = 0 #total sum of squares
 # sum_abs = 0
@@ -550,17 +504,17 @@ for D in diam:
 # # axs[-1].set_xlabel('x (cm)')
 # # plt.show()
 
-# #####save all data
-# np.savetxt('VelocityAtImpact.csv',VelocityAtImpact,delimiter=",")
-# np.savetxt('ImpactEnergyAvg.csv',ImpactEnergyAvg,delimiter=",")
-# np.savetxt('VelocityAvg.csv',VelocityAvg,delimiter=",")
-# np.savetxt('EnergyAtImpact.csv',EnergyAtImpact,delimiter=",")
-# np.savetxt('XAtImpact.csv',XAtImpact,delimiter=",")
-# np.savetxt('ZAtImpact.csv',ZAtImpact,delimiter=",")
-# np.savetxt('ErosionAtImpact.csv',ErosionAtImpact,delimiter=",")
-# np.savetxt('AverageVelocities.csv',AverageVelocities,delimiter=",")
-# np.savetxt('MaxVelocities.csv',MaxVelocities,delimiter=",")
-# np.savetxt('diam.csv',diam,delimiter=",")
-# np.savetxt('TotalImpactEnergy.csv',TotalImpactEnergy,delimiter=",")
-# np.savetxt('ParticleDrag.csv',ParticleDrag,delimiter=",")
-# np.savetxt('ParticleReynolds.csv',ParticleReynolds,delimiter=",")
+#####save all data
+np.savetxt('VelocityAtImpact'+str(l32)+'.csv',VelocityAtImpact,delimiter=",")
+np.savetxt('ImpactEnergyAvg'+str(l32)+'.csv',ImpactEnergyAvg,delimiter=",")
+np.savetxt('VelocityAvg'+str(l32)+'.csv',VelocityAvg,delimiter=",")
+np.savetxt('EnergyAtImpact'+str(l32)+'.csv',EnergyAtImpact,delimiter=",")
+np.savetxt('XAtImpact'+str(l32)+'.csv',XAtImpact,delimiter=",")
+np.savetxt('ZAtImpact'+str(l32)+'.csv',ZAtImpact,delimiter=",")
+np.savetxt('ErosionAtImpact'+str(l32)+'.csv',ErosionAtImpact,delimiter=",")
+np.savetxt('AverageVelocities'+str(l32)+'.csv',AverageVelocities,delimiter=",")
+np.savetxt('MaxVelocities'+str(l32)+'.csv',MaxVelocities,delimiter=",")
+np.savetxt('diam'+str(l32)+'.csv',diam,delimiter=",")
+np.savetxt('TotalImpactEnergy'+str(l32)+'.csv',TotalImpactEnergy,delimiter=",")
+np.savetxt('ParticleDrag'+str(l32)+'.csv',ParticleDrag,delimiter=",")
+np.savetxt('ParticleReynolds'+str(l32)+'.csv',ParticleReynolds,delimiter=",")

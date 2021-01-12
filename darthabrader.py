@@ -90,8 +90,9 @@ def scallop_array_one(x_array, number_of_scallops):
    
     return y
 
-def scallop_array(x_array, one_period, number_of_scallops):
+def scallop_array(x_array, one_period, number_of_scallops, crest_to_crest_scallop_length):
     
+    l32 = crest_to_crest_scallop_length
     z = np.zeros(x_array.shape)
     period = len(one_period)-1
     n = number_of_scallops 
@@ -101,21 +102,107 @@ def scallop_array(x_array, one_period, number_of_scallops):
             v =-((0.112 * np.sin(np.pi * one_period)) + (0.028 * np.sin(2 * np.pi * one_period)) - (0.004 * np.sin(3 * np.pi * one_period)))    #(Blumberg and Curl, 1974)
             z[i*period + j] = v[j]
     
-    x = (x_array/number_of_scallops) * 30
-    z = 0.7 + z*5
+    x = x_array *l32
+    z = z*l32
 
     return x, z
 
+def turbulent_flowfield(CFD_dataset, x_array, one_period, number_of_scallops, x_directed_flow_velocity, z_directed_flow_velocity):
+    #restructure STAR-CCM+ turbulent flow data set
+    for i in range(len(CFD_dataset)):
+        x_index = np.int(CFD_dataset[i, 0])
+        z_index = np.int(CFD_dataset[i, 1])
+        x_directed_flow_velocity[z_index, x_index] = CFD_dataset[i, 2]
+        z_directed_flow_velocity[z_index, x_index] = CFD_dataset[i, 3]
+     
+    if np.any(x_directed_flow_velocity == -9999):    #identify holes in data set and patch them    
+        holes_and_wall_u = np.where(x_directed_flow_velocity == -9999)
+        ux_zero = np.array(holes_and_wall_u[1])
+        uz_zero = np.array(holes_and_wall_u[0])
+        
+        for j in range(len(ux_zero)-1):
+            hole_z = np.int(uz_zero[j])
+            hole_x = np.int(ux_zero[j])
+            d = 8
+            uN = x_directed_flow_velocity[hole_z + 1, hole_x]
+            wN = z_directed_flow_velocity[hole_z + 1, hole_x]
+            if uN == 0 or uN == -9999:
+                uN = 0
+                wN = 0
+                d = d - 1
+            uNE = x_directed_flow_velocity[hole_z + 1, hole_x + 1]
+            wNE = z_directed_flow_velocity[hole_z + 1, hole_x + 1]
+            if uNE == 0 or uNE == -9999:
+                uNE = 0
+                wNE = 0
+                d = d - 1
+            uE = x_directed_flow_velocity[hole_z, hole_x + 1]
+            wE = z_directed_flow_velocity[hole_z, hole_x + 1]
+            if uE == 0 or uE == -9999:
+                uE = 0
+                wE = 0
+                d = d - 1
+            uSE = x_directed_flow_velocity[hole_z - 1, hole_x + 1]
+            wSE = z_directed_flow_velocity[hole_z - 1, hole_x + 1]
+            if uSE == 0 or uSE == -9999:
+                uSE = 0
+                wSE = 0
+                d = d - 1
+            uS = x_directed_flow_velocity[hole_z - 1, hole_x]
+            wS = z_directed_flow_velocity[hole_z - 1, hole_x]
+            if uS == 0 or uS == -9999:
+                uS = 0
+                wS = 0
+                d = d - 1
+            uSW = x_directed_flow_velocity[hole_z - 1, hole_x - 1]
+            wSW = z_directed_flow_velocity[hole_z - 1, hole_x - 1]
+            if uSW == 0 or uSW == -9999:
+                uSW = 0
+                wSW = 0
+                d = d - 1
+            uW = x_directed_flow_velocity[hole_z, hole_x - 1]
+            wW = z_directed_flow_velocity[hole_z, hole_x - 1]
+            if uW == 0 or uW == -9999:
+                uW = 0
+                wW = 0
+                d = d - 1
+            uNW = x_directed_flow_velocity[hole_z + 1, hole_x - 1]
+            wNW = z_directed_flow_velocity[hole_z + 1, hole_x - 1]
+            if uNW == 0 or uNW == -9999:
+                uNW = 0
+                wNW = 0
+                d = d - 1
+            x_directed_flow_velocity[hole_z, hole_x] = ((uN + uNE + uE + uSE + uS + uSW + uW + uNW)/d)
+            z_directed_flow_velocity[hole_z, hole_x] = ((wN + wNE + wE + wSE + wS + wSW + wW + wNW)/d) 
+            
+    x_directed_flow_velocity[:, -1] = x_directed_flow_velocity[:, 0]
+    z_directed_flow_velocity[:, -1] = z_directed_flow_velocity[:, 0]
+    
+    
+    # six-scallop long velocity matrix
+    
+    u_water = np.empty(shape=(int(len(one_period)),int(len(x_array))))
+    w_water = np.empty(shape=(int(len(one_period)),int(len(x_array))))
+    
+    b = len(x_directed_flow_velocity) - 1
+    
+    for i in range(number_of_scallops):
+        for j in range(b):   
+            u_water[:, i*b + j] = x_directed_flow_velocity[:, j]
+            w_water[:, i*b + j] = z_directed_flow_velocity[:, j]
+            
+    return u_water, w_water
+    
+    
+    
 
-def settling_velocity(rho_sediment, rho_fluid, drag_coef, grain_size, fall_distance):
+def settling_velocity(rho_sediment, rho_fluid, grain_size):
     R = (rho_sediment/rho_fluid - 1)
     g = 981 # cm*s^-2
     D = grain_size
     nu = 0.01307  # g*cm^-1*s^-1
-    #C = drag_coef
     C_1 = 18
     C_2 = 1
-    #w_s = np.sqrt((4*R*g*D)/(3*C))
     w_s = -(R*g*D**2)/((C_1*nu)+np.sqrt(0.75*C_2*R*g*D**3))
     
     return w_s
@@ -124,7 +211,7 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx, theta2, mu_kin):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx, theta2, mu_kin, crest_height, scallop_length):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
@@ -134,19 +221,19 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     
     #calculate bedload height as function of grain size (Wilson, 1987)
     xi = np.linspace(0, 1, 5)
-    delta = 0.7 + (0.5 + 3.5 * xi)*D
+    delta = crest_height + (0.5 + 3.5 * xi)*D
     Hf = delta[1]
 
         
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
-    impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
+    impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
     dt = dx / u_w0
     location_data = []
     # define machine epsilon threshold
     eps2=np.sqrt( u_w0*np.finfo(float).eps )
 
     
-    for i in range(len(x0)):    #begin one particle at reast at each x-position at its fall height (Hf per Lamb et al., 2008)
+    for i in range(len(x0)):    #begin one particle at rest at each x-position at its fall height (Hf per Wilson, 1987)
         h = 0
         t = 0
         OOB_FLAG = False
@@ -155,7 +242,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
            #initial position for ith particle, # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w 
         
         # upper level of fall, ignores turbulent flow structure
-        while sediment_location[h, 2] >= 4:
+        while sediment_location[h, 2] >= (0.99 * scallop_length) :
             h += 1
             t += dt
             if i+h < (x0.size - 1):
@@ -175,13 +262,12 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         # near-ground portion, with drag
         while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
             t += dt
-            # get current indices -  this should be the previous h, above
+            # get current location with respect to computational mesh at time = t - dt
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
-                
-            if sediment_location[h, 2] <= 5:
+            if sediment_location[h, 2] <= (0.99 * scallop_length):
                 z_idx = np.rint((sediment_location[h, 2]/0.05))
             else:
-                z_idx = 100
+                z_idx = scallop_length/.05
             
             wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
             
@@ -189,19 +275,14 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             if np.abs(wrel) > eps2:                                       
                 Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
-                #print('wrel', wrel, 'drag_coef', drag_coef)
                 a = -(1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
             else:
                 a = 0
             
-           # print('sediment_location[h, 1]', sediment_location[h, 1],'sediment_location[h, 3]', sediment_location[h, 3])               
-            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
-            #print('sediment_location[h, 3]', sediment_location[h, 3])
-            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
-            
-            #print('x_idx= ', x_idx, ' z_idx= ', z_idx, 'pi_x', pi_x, 'pi_z= ', pi_z)
-            pi_u = drag * u_water[int(z_idx), int(x_idx)]
-            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
+            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt                        # particle i x-position at time = t
+            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2      # particle i z-position at time = t  
+            pi_u = drag * u_water[int(z_idx), int(x_idx)]                                        # particle i x-velocity at time = t
+            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt) # particle i z-velocity at time = t
             if pi_w < w_s:
                 pi_w = w_s
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
@@ -231,7 +312,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             if pi_z <= 5:
                 z_idx = np.int(np.rint((pi_z/0.05)))
             else:
-                z_idx = 100
+                z_idx = scallop_length/.05
             
             h+=1
             #print('h',h)
@@ -259,10 +340,10 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         # get current indices -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
                 
-            if sediment_location[h, 2] <= 5:
+            if sediment_location[h, 2] <= 0.8*scallop_length:
                 z_idx = np.rint((sediment_location[h, 2]/0.05))
             else:
-                z_idx = 100
+                z_idx = scallop_length/.05
             
             wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
             
@@ -304,7 +385,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             if pi_z <= 5:
                 z_idx = np.int(np.rint((pi_z/0.05)))
             else:
-                z_idx = 100
+                z_idx = scallop_length/.05
             
             h+=1
             #print('h',h)
