@@ -31,16 +31,15 @@ plt.close('all')
 # ### user input: 
 # =============================================================================
 l32 = 5 # sauter-mean scallop length in cm
-n = 100 # number of grainsizes to simulate in diameter array
-
+n = 10 # number of grainsizes to simulate in diameter array
+numScal = 24  #number of scallops
 
 
 
 # building the initial scallop array
-numScal = 6  #number of scallops
-xmax = 6
+
 dx0 = 0.05/l32
-xScal = np.arange(0, xmax+dx0,dx0)  #x-array for scallop field
+xScal = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
 uScal = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
 
 
@@ -50,75 +49,31 @@ cH = np.max(z0)   # crest height
 dzdx = np.gradient(z0, x0)
 theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 
-fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-axs.set_aspect('equal')
-axs.set_ylim(0,0.4)
-axs.plot (x0, z0, 'grey')
 
-
+# import and process turbulent flow data set
 TurbVel = genfromtxt('TurbulentFlowfield'+str(l32)+'.csv', delimiter=',')
 
 # variable declarations
 nx = l32*20 + 1
 ny = l32*20 + 1
-new_x = np.linspace(0, l32, int(nx))
-new_z = np.linspace(0, l32, int(ny))
+new_x = np.linspace(0, l32/numScal, int(nx))
+new_z = np.linspace(0, l32/numScal, int(ny))
 new_X, new_Z = np.meshgrid(new_x, new_z)
 new_u = np.zeros((int(ny), int(nx)))
 new_w = np.zeros((int(ny), int(nx)))
 
-#restructure STAR-CCM+ turbulent flow data set
-for i in range(len(TurbVel)):
-    x_index = np.int(TurbVel[i, 0])
-    z_index = np.int(TurbVel[i, 1])
-    new_u[z_index, x_index] = TurbVel[i, 2]
-    new_w[z_index, x_index] = TurbVel[i, 3]
- 
-if np.any(new_u == -9999):    #identify holes in data set and patch them    
-    holes_and_wall_u = np.where(new_u == -9999)
-    ux_zero = np.array(holes_and_wall_u[1])
-    uz_zero = np.array(holes_and_wall_u[0])
-    
-    #find the bottom of the trough
-    max_min = np.where(dzdx > 0)[0]
-    
-    for j in range(len(ux_zero)):
-        if (ux_zero[j] > 0 & ux_zero[j] < max_min[0]):   # identify holes in the lee-side of the scallop
-            hole_z = np.int(uz_zero[j])
-            hole_x = np.int(ux_zero[j])
-            new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
-            new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
-        elif (ux_zero[j] >= max_min[0] & ux_zero[j] < int(len(uScal)-1)):   # identify holes in the stoss-side of the scallop
-            hole_z = np.int(uz_zero[j])
-            hole_x = np.int(ux_zero[j])
-            new_u[hole_z, hole_x] = ((new_u[hole_z + 1, hole_x] + new_u[hole_z + 1, hole_x + 1] + new_u[hole_z, hole_x + 1] + new_u[hole_z - 1, hole_x + 1] + new_u[hole_z - 1, hole_x] + new_u[hole_z - 1, hole_x - 1] + new_u[hole_z, hole_x - 1] + new_u[hole_z + 1, hole_x - 1])/8)
-            new_w[hole_z, hole_x] = ((new_w[hole_z + 1, hole_x] + new_w[hole_z + 1, hole_x + 1] + new_w[hole_z, hole_x + 1] + new_w[hole_z - 1, hole_x + 1] + new_w[hole_z - 1, hole_x] + new_w[hole_z - 1, hole_x - 1] + new_w[hole_z, hole_x - 1] + new_w[hole_z + 1, hole_x - 1])/8) 
-        else:
-            continue      # this is inside the wall   
+u_water, w_water = da.turbulent_flowfield(TurbVel, xScal, uScal, numScal, new_u, new_w)
+
 
 fig = plt.figure(figsize=(11, 7), dpi=100)
-plt.contourf(new_X, new_Z, np.sqrt(new_u**2 + new_w**2), alpha = 0.5)
+plt.contourf(new_X, new_Z, np.sqrt(new_u**2 + new_w[:len(new_u)]**2), alpha = 0.5)
 plt.colorbar()
 plt.title('Velocity magnitude, turbulent flow')
 plt.xlabel('X')
 plt.ylabel('Z');
 
-# In[4]:
 
 
-# six-scallop long velocity matrix
-
-u_water = np.empty(shape=(int(len(uScal)),int(len(xScal))))
-w_water = np.empty(shape=(int(len(uScal)),int(len(xScal))))
-
-a = 6
-b = len(new_u) - 1
-c = len(new_u) - 1
-
-for i in range(a):
-    for j in range(b):   
-        u_water[:, i*b + j] = new_u[:, j]
-        w_water[:, i*b + j] = new_w[:, j]
 
 # In[6]:
 
@@ -155,7 +110,6 @@ for D in diam:
     rho_water = 1
     Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
     mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
-    L = l32    # cm, crest-to-crest scallop length
     
     
     
@@ -163,14 +117,13 @@ for D in diam:
     # In[9]:
     
     
-    u_w0 = (Re * mu_water) / (L * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
+    u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
     
-    w_s = da.settling_velocity(rho_quartz, rho_water, D) # DW 12/8: I think this calculation might assume things no longer true about the settling code
-                                # RB 12/9: @DW, w_s is only used to calculate the trajectories in the upper fall where flow is assumed to be uniform
+    w_s = da.settling_velocity(rho_quartz, rho_water, D) 
     
     # In[10]:
     
-    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water/rho_water, cH, l32)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water, cH, l32)
     
     ImpactEnergyAvg = np.empty_like(diam)
     TotalImpactEnergy = np.empty_like(diam)
@@ -200,19 +153,19 @@ for D in diam:
     print('diam = ' + str(diam[i]) + ' cm')
     i += 1
     
-    # # trajectory figure
-    # fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    # axs.set_xlim(l32*3, l32*5)
-    # axs.set_ylim(0, l32*2)
-    # axs.set_aspect('equal')
-    # axs.plot (x0, z0, 'grey')
-    # ld = np.array(loc_data, dtype=object)
-    # for p in ld[(np.random.randint(len(loc_data),size=100)).astype(int)]:
-    #     axs.plot(p[:,1], p[:,2], 2, 'blue')
-    # plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey', zorder=101)
-    # axs.set_ylabel('z (cm)')
-    # axs.set_xlabel('x (cm)')
-    # axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on ' +str(l32)+ ' cm floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
+    # trajectory figure
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+    axs.set_xlim(l32*numScal/2, l32*numScal)
+    axs.set_ylim(0, l32*2)
+    axs.set_aspect('equal')
+    axs.plot (x0, z0, 'grey')
+    ld = np.array(loc_data, dtype=object)
+    for p in ld[(np.random.randint(len(loc_data),size=50)).astype(int)]:
+        axs.plot(p[:,1], p[:,2], 2, 'blue')
+    plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey', zorder=101)
+    axs.set_ylabel('z (cm)')
+    axs.set_xlabel('x (cm)')
+    axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on ' +str(l32)+ ' cm floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
     
 #     # velocity exploration
 #     ###histogram of last recorded velocities of all particles
@@ -247,14 +200,14 @@ VelocityAvg = np.zeros_like(diam)
 for r in range(len(diam)):
     VelocityAvg[r] = -np.average(VelocityAtImpact[r, 200:301][VelocityAtImpact[r, 200:301]<0])
 axs.scatter((diam /l32), VelocityAvg, label = 'simulated impact velocity on '+str(l32)+' cm scallops')
-#axs.plot(diam*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
+axs.plot(diam/l32, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
 #axs.plot(diam*10, Stokes, c = 'y', label = 'settling velocity (Stokes)')
 # line_fit_1=np.polyfit(np.log10(diam * 10), VelocityAvg, deg=1, full=True)
 # y = (line_fit_1[0][0])*(np.log10(diam*10)) + (line_fit_1[0][1])
 # axs.plot((diam*10), y, c = 'r', label = 'fit curve, impact velocity = 46.1log(D) -1.81')
 Diam5 = genfromtxt('diam5.csv', delimiter=',')
 Vels5 = genfromtxt('VelocityAvg5.csv', delimiter=',')
-axs.scatter((Diam5 /5), Vels5, label = 'simulated impact velocity on 5 cm scallops', zorder = 1)
+axs.scatter((Diam5 /5), Vels5, label = 'simulated impact velocity on 5 cm scallops from data file', zorder = 1)
 plt.legend()
 plt.semilogx()
 #axs.set_xlim(0.01,0.4)
