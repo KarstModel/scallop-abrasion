@@ -30,7 +30,7 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-l32 = 5 # sauter-mean scallop length in cm
+l32 = 2.5 # sauter-mean scallop length in cm
 n = 10 # number of grainsizes to simulate in diameter array
 numScal = 24  #number of scallops
 
