@@ -107,6 +107,94 @@ def scallop_array(x_array, one_period, number_of_scallops, crest_to_crest_scallo
 
     return x, z
 
+def turbulent_flowfield(CFD_dataset, x_array, one_period, number_of_scallops, x_directed_flow_velocity, z_directed_flow_velocity):
+    #restructure STAR-CCM+ turbulent flow data set
+    for i in range(len(CFD_dataset)):
+        x_index = np.int(CFD_dataset[i, 0])
+        z_index = np.int(CFD_dataset[i, 1])
+        x_directed_flow_velocity[z_index, x_index] = CFD_dataset[i, 2]
+        z_directed_flow_velocity[z_index, x_index] = CFD_dataset[i, 3]
+     
+    if np.any(x_directed_flow_velocity == -9999):    #identify holes in data set and patch them    
+        holes_and_wall_u = np.where(x_directed_flow_velocity == -9999)
+        ux_zero = np.array(holes_and_wall_u[1])
+        uz_zero = np.array(holes_and_wall_u[0])
+        
+        for j in range(len(ux_zero)-1):
+            hole_z = np.int(uz_zero[j])
+            hole_x = np.int(ux_zero[j])
+            d = 8
+            uN = x_directed_flow_velocity[hole_z + 1, hole_x]
+            wN = z_directed_flow_velocity[hole_z + 1, hole_x]
+            if uN == 0 or uN == -9999:
+                uN = 0
+                wN = 0
+                d = d - 1
+            uNE = x_directed_flow_velocity[hole_z + 1, hole_x + 1]
+            wNE = z_directed_flow_velocity[hole_z + 1, hole_x + 1]
+            if uNE == 0 or uNE == -9999:
+                uNE = 0
+                wNE = 0
+                d = d - 1
+            uE = x_directed_flow_velocity[hole_z, hole_x + 1]
+            wE = z_directed_flow_velocity[hole_z, hole_x + 1]
+            if uE == 0 or uE == -9999:
+                uE = 0
+                wE = 0
+                d = d - 1
+            uSE = x_directed_flow_velocity[hole_z - 1, hole_x + 1]
+            wSE = z_directed_flow_velocity[hole_z - 1, hole_x + 1]
+            if uSE == 0 or uSE == -9999:
+                uSE = 0
+                wSE = 0
+                d = d - 1
+            uS = x_directed_flow_velocity[hole_z - 1, hole_x]
+            wS = z_directed_flow_velocity[hole_z - 1, hole_x]
+            if uS == 0 or uS == -9999:
+                uS = 0
+                wS = 0
+                d = d - 1
+            uSW = x_directed_flow_velocity[hole_z - 1, hole_x - 1]
+            wSW = z_directed_flow_velocity[hole_z - 1, hole_x - 1]
+            if uSW == 0 or uSW == -9999:
+                uSW = 0
+                wSW = 0
+                d = d - 1
+            uW = x_directed_flow_velocity[hole_z, hole_x - 1]
+            wW = z_directed_flow_velocity[hole_z, hole_x - 1]
+            if uW == 0 or uW == -9999:
+                uW = 0
+                wW = 0
+                d = d - 1
+            uNW = x_directed_flow_velocity[hole_z + 1, hole_x - 1]
+            wNW = z_directed_flow_velocity[hole_z + 1, hole_x - 1]
+            if uNW == 0 or uNW == -9999:
+                uNW = 0
+                wNW = 0
+                d = d - 1
+            x_directed_flow_velocity[hole_z, hole_x] = ((uN + uNE + uE + uSE + uS + uSW + uW + uNW)/d)
+            z_directed_flow_velocity[hole_z, hole_x] = ((wN + wNE + wE + wSE + wS + wSW + wW + wNW)/d) 
+            
+    x_directed_flow_velocity[:, -1] = x_directed_flow_velocity[:, 0]
+    z_directed_flow_velocity[:, -1] = z_directed_flow_velocity[:, 0]
+    
+    
+    # six-scallop long velocity matrix
+    
+    u_water = np.empty(shape=(int(len(one_period)),int(len(x_array))))
+    w_water = np.empty(shape=(int(len(one_period)),int(len(x_array))))
+    
+    b = len(x_directed_flow_velocity) - 1
+    
+    for i in range(number_of_scallops):
+        for j in range(b):   
+            u_water[:, i*b + j] = x_directed_flow_velocity[:, j]
+            w_water[:, i*b + j] = z_directed_flow_velocity[:, j]
+            
+    return u_water, w_water
+    
+    
+    
 
 def settling_velocity(rho_sediment, rho_fluid, grain_size):
     R = (rho_sediment/rho_fluid - 1)
