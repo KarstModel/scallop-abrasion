@@ -1,4 +1,4 @@
-# Numerical modeling comparison of mechanical and chemical erosion of sculpted limestone surfaces
+# DKARST: modeling abrasional wear of scalloped bedrock in caves
 ## Rachel Bosch and Dylan Ward
 
 ### Abstract
