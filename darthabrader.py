@@ -10,6 +10,8 @@ Based on Jupyter notebooks by Rachel Bosch
 """
 import numpy as np
 from dragcoeff import dragcoeff
+from numpy import genfromtxt
+
 #import pdb
 
 #CFD laminar flow field
@@ -107,8 +109,350 @@ def scallop_array(x_array, one_period, number_of_scallops, crest_to_crest_scallo
 
     return x, z
 
-def turbulent_flowfield(CFD_dataset, x_array, one_period, number_of_scallops, x_directed_flow_velocity, z_directed_flow_velocity):
+def laminar_flowfield(x_array, one_period, number_of_scallops, length_of_scallop):
+        ##variable declarations
+    nx = 101
+    ny = 101
+    nit = 50 
+    dx = 2 / (nx - 1)
+    dy = 2 / (ny - 1)
+    x = np.linspace(0, 5, nx)
+    y = np.linspace(0, 5, ny)
+    X, Y = np.meshgrid(x, y)
+    
+    
+    ##physical variables
+    rho = 1000
+    nu = 4
+    F = 1
+    dt = .000001
+    
+    #initial conditions
+    u = np.zeros((ny, nx)) + 60
+    un = np.zeros((ny, nx))
+    
+    v = np.zeros((ny, nx))
+    vn = np.zeros((ny, nx))
+    
+    p = np.ones((ny, nx))
+    
+    b = np.zeros((ny, nx))
+    
+    
+    udiff = 1
+    stepcount = 0
+    
+    while udiff > 0.00001:
+        un = u.copy()
+        vn = v.copy()
+    
+        b = build_up_b(rho, dt, dx, dy, u, v)
+        p = pressure_poisson_periodic(p, dx, dy, nit, b)
+    
+        u[1:-1, 1:-1] = (un[1:-1, 1:-1] -
+                         un[1:-1, 1:-1] * dt / dx * 
+                        (un[1:-1, 1:-1] - un[1:-1, 0:-2]) -
+                         vn[1:-1, 1:-1] * dt / dy * 
+                        (un[1:-1, 1:-1] - un[0:-2, 1:-1]) -
+                         dt / (2 * rho * dx) * 
+                        (p[1:-1, 2:] - p[1:-1, 0:-2]) +
+                         nu * (dt / dx**2 * 
+                        (un[1:-1, 2:] - 2 * un[1:-1, 1:-1] + un[1:-1, 0:-2]) +
+                         dt / dy**2 * 
+                        (un[2:, 1:-1] - 2 * un[1:-1, 1:-1] + un[0:-2, 1:-1])) + 
+                         F * dt)
+    
+        v[1:-1, 1:-1] = (vn[1:-1, 1:-1] -
+                         un[1:-1, 1:-1] * dt / dx * 
+                        (vn[1:-1, 1:-1] - vn[1:-1, 0:-2]) -
+                         vn[1:-1, 1:-1] * dt / dy * 
+                        (vn[1:-1, 1:-1] - vn[0:-2, 1:-1]) -
+                         dt / (2 * rho * dy) * 
+                        (p[2:, 1:-1] - p[0:-2, 1:-1]) +
+                         nu * (dt / dx**2 *
+                        (vn[1:-1, 2:] - 2 * vn[1:-1, 1:-1] + vn[1:-1, 0:-2]) +
+                         dt / dy**2 * 
+                        (vn[2:, 1:-1] - 2 * vn[1:-1, 1:-1] + vn[0:-2, 1:-1])))
+    
+        # Periodic BC u @ x = -1     
+        u[1:-1, -1] = (un[1:-1, -1] - un[1:-1, -1] * dt / dx * 
+                      (un[1:-1, -1] - un[1:-1, -2]) -
+                       vn[1:-1, -1] * dt / dy * 
+                      (un[1:-1, -1] - un[0:-2, -1]) -
+                       dt / (2 * rho * dx) *
+                      (p[1:-1, 0] - p[1:-1, -2]) + 
+                       nu * (dt / dx**2 * 
+                      (un[1:-1, 0] - 2 * un[1:-1,-1] + un[1:-1, -2]) +
+                       dt / dy**2 * 
+                      (un[2:, -1] - 2 * un[1:-1, -1] + un[0:-2, -1])) + F * dt)
+    
+        # Periodic BC u @ x = 0
+        u[1:-1, 0] = (un[1:-1, 0] - un[1:-1, 0] * dt / dx *
+                     (un[1:-1, 0] - un[1:-1, -1]) -
+                      vn[1:-1, 0] * dt / dy * 
+                     (un[1:-1, 0] - un[0:-2, 0]) - 
+                      dt / (2 * rho * dx) * 
+                     (p[1:-1, 1] - p[1:-1, -1]) + 
+                      nu * (dt / dx**2 * 
+                     (un[1:-1, 1] - 2 * un[1:-1, 0] + un[1:-1, -1]) +
+                      dt / dy**2 *
+                     (un[2:, 0] - 2 * un[1:-1, 0] + un[0:-2, 0])) + F * dt)
+    
+        # Periodic BC v @ x = -1
+        v[1:-1, -1] = (vn[1:-1, -1] - un[1:-1, -1] * dt / dx *
+                      (vn[1:-1, -1] - vn[1:-1, -2]) - 
+                       vn[1:-1, -1] * dt / dy *
+                      (vn[1:-1, -1] - vn[0:-2, -1]) -
+                       dt / (2 * rho * dy) * 
+                      (p[2:, -1] - p[0:-2, -1]) +
+                       nu * (dt / dx**2 *
+                      (vn[1:-1, 0] - 2 * vn[1:-1, -1] + vn[1:-1, -2]) +
+                       dt / dy**2 *
+                      (vn[2:, -1] - 2 * vn[1:-1, -1] + vn[0:-2, -1])))
+    
+        # Periodic BC v @ x = 0
+        v[1:-1, 0] = (vn[1:-1, 0] - un[1:-1, 0] * dt / dx *
+                     (vn[1:-1, 0] - vn[1:-1, -1]) -
+                      vn[1:-1, 0] * dt / dy *
+                     (vn[1:-1, 0] - vn[0:-2, 0]) -
+                      dt / (2 * rho * dy) * 
+                     (p[2:, 0] - p[0:-2, 0]) +
+                      nu * (dt / dx**2 * 
+                     (vn[1:-1, 1] - 2 * vn[1:-1, 0] + vn[1:-1, -1]) +
+                      dt / dy**2 * 
+                     (vn[2:, 0] - 2 * vn[1:-1, 0] + vn[0:-2, 0])))
+        
+        
+        # Wall BC: no-slip on scallop surface
+        u[:16, 0] = 0
+        u[:15, 1] = 0
+        u[:15, 2] = 0
+        u[:14, 3] = 0
+        u[:13, 4] = 0
+        u[:13, 5] = 0
+        u[:12, 6] = 0
+        u[:12, 7] = 0
+        u[:11, 8] = 0
+        u[:10, 9] = 0
+        u[:10, 10] = 0
+        u[:9, 11] = 0
+        u[:9, 12] = 0
+        u[:8, 13] = 0
+        u[:8, 14] = 0
+        u[:7, 15] = 0
+        u[:7, 16] = 0
+        u[:6, 17] = 0
+        u[:6, 18] = 0
+        u[:5, 19] = 0
+        u[:5, 20] = 0
+        u[:4, 21] = 0
+        u[:4, 22] = 0
+        u[:3, 23] = 0
+        u[:3, 24] = 0
+        u[:3, 25] = 0
+        u[:2, 26] = 0
+        u[:2, 27] = 0
+        u[:2, 28] = 0
+        u[:1, 29] = 0
+        u[:1, 30] = 0
+        u[:1, 31] = 0
+        u[:1, 32] = 0
+        u[:1, 33] = 0
+        u[0, 34] = 0
+        u[0, 35] = 0
+        u[0, 36] = 0
+        u[0, 37] = 0
+        u[0, 38] = 0
+        u[0, 39] = 0
+        u[0, 40] = 0
+        u[0, 41] = 0
+        u[0, 42] = 0
+        u[0, 43] = 0
+        u[0, 44] = 0
+        u[0, 45] = 0
+        u[:1, 46] = 0
+        u[:1, 47] = 0
+        u[:1, 48] = 0
+        u[:1, 49] = 0
+        u[:1, 50] = 0
+        u[:1, 51] = 0
+        u[:2, 52] = 0
+        u[:2, 53] = 0
+        u[:2, 54] = 0
+        u[:3, 55] = 0
+        u[:3, 56] = 0
+        u[:3, 57] = 0
+        u[:4, 58] = 0
+        u[:4, 59] = 0
+        u[:4, 60] = 0
+        u[:5, 61] = 0
+        u[:5, 62] = 0
+        u[:5, 63] = 0
+        u[:6, 64] = 0
+        u[:6, 65] = 0
+        u[:6, 66] = 0
+        u[:7, 67] = 0
+        u[:7, 68] = 0
+        u[:8, 69] = 0
+        u[:8, 70] = 0
+        u[:8, 71] = 0
+        u[:9, 72] = 0
+        u[:9, 73] = 0
+        u[:9, 74] = 0
+        u[:10, 75] = 0
+        u[:10, 76] = 0
+        u[:10, 77] = 0
+        u[:11, 78] = 0
+        u[:11, 79] = 0
+        u[:11, 80] = 0
+        u[:12, 81] = 0
+        u[:12, 82] = 0
+        u[:12, 83] = 0
+        u[:12, 84] = 0
+        u[:13, 85] = 0
+        u[:13, 86] = 0
+        u[:13, 87] = 0
+        u[:13, 88] = 0
+        u[:14, 89] = 0
+        u[:14, 90] = 0
+        u[:14, 91] = 0
+        u[:14, 92] = 0
+        u[:14, 93] = 0
+        u[:15, 94] = 0
+        u[:15, 95] = 0
+        u[:15, 96] = 0
+        u[:15, 97] = 0
+        u[:15, 98] = 0
+        u[:16, 99] = 0
+        u[:17, 100] = 0
+        v[:16, 0] = 0
+        v[:15, 1] = 0
+        v[:15, 2] = 0
+        v[:14, 3] = 0
+        v[:13, 4] = 0
+        v[:13, 5] = 0
+        v[:12, 6] = 0
+        v[:12, 7] = 0
+        v[:11, 8] = 0
+        v[:10, 9] = 0
+        v[:10, 10] = 0
+        v[:9, 11] = 0
+        v[:9, 12] = 0
+        v[:8, 13] = 0
+        v[:8, 14] = 0
+        v[:7, 15] = 0
+        v[:7, 16] = 0
+        v[:6, 17] = 0
+        v[:6, 18] = 0
+        v[:5, 19] = 0
+        v[:5, 20] = 0
+        v[:4, 21] = 0
+        v[:4, 22] = 0
+        v[:3, 23] = 0
+        v[:3, 24] = 0
+        v[:3, 25] = 0
+        v[:2, 26] = 0
+        v[:2, 27] = 0
+        v[:2, 28] = 0
+        v[:1, 29] = 0
+        v[:1, 30] = 0
+        v[:1, 31] = 0
+        v[:1, 32] = 0
+        v[:1, 33] = 0
+        v[0, 34] = 0
+        v[0, 35] = 0
+        v[0, 36] = 0
+        v[0, 37] = 0
+        v[0, 38] = 0
+        v[0, 39] = 0
+        v[0, 40] = 0
+        v[0, 41] = 0
+        v[0, 42] = 0
+        v[0, 43] = 0
+        v[0, 44] = 0
+        v[0, 45] = 0
+        v[:1, 46] = 0
+        v[:1, 47] = 0
+        v[:1, 48] = 0
+        v[:1, 49] = 0
+        v[:1, 50] = 0
+        v[:1, 51] = 0
+        v[:2, 52] = 0
+        v[:2, 53] = 0
+        v[:2, 54] = 0
+        v[:3, 55] = 0
+        v[:3, 56] = 0
+        v[:3, 57] = 0
+        v[:4, 58] = 0
+        v[:4, 59] = 0
+        v[:4, 60] = 0
+        v[:5, 61] = 0
+        v[:5, 62] = 0
+        v[:5, 63] = 0
+        v[:6, 64] = 0
+        v[:6, 65] = 0
+        v[:6, 66] = 0
+        v[:7, 67] = 0
+        v[:7, 68] = 0
+        v[:8, 69] = 0
+        v[:8, 70] = 0
+        v[:8, 71] = 0
+        v[:9, 72] = 0
+        v[:9, 73] = 0
+        v[:9, 74] = 0
+        v[:10, 75] = 0
+        v[:10, 76] = 0
+        v[:10, 77] = 0
+        v[:11, 78] = 0
+        v[:11, 79] = 0
+        v[:11, 80] = 0
+        v[:12, 81] = 0
+        v[:12, 82] = 0
+        v[:12, 83] = 0
+        v[:12, 84] = 0
+        v[:13, 85] = 0
+        v[:13, 86] = 0
+        v[:13, 87] = 0
+        v[:13, 88] = 0
+        v[:14, 89] = 0
+        v[:14, 90] = 0
+        v[:14, 91] = 0
+        v[:14, 92] = 0
+        v[:14, 93] = 0
+        v[:15, 94] = 0
+        v[:15, 95] = 0
+        v[:15, 96] = 0
+        v[:15, 97] = 0
+        v[:15, 98] = 0
+        v[:16, 99] = 0
+        v[:17, 100] = 0
+        
+        #water surface BC, du/dy = 0 @ y = -1, v = 0 @ y = -2
+        u[-1, :] = u[-2, :] 
+        v[-1, :]=0
+        
+        udiff = np.abs(np.sum(u) - np.sum(un)) / np.sum(u)
+        stepcount += 1
+    
+    # six-scallop long velocity matrix
+    u_water = np.empty(shape=(int(len(one_period)),int(len(x_array))))
+    w_water = np.empty(shape=(int(len(one_period)),int(len(x_array))))
+    
+    b = len(u) - 1
+    
+    for i in range(number_of_scallops):
+        for j in range(b):   
+            u_water[:, i*b + j] = u[:, j]
+            w_water[:, i*b + j] = v[:, j]
+        
+    return u_water, w_water
+
+def turbulent_flowfield(x_array, one_period, number_of_scallops, x_directed_flow_velocity, z_directed_flow_velocity, length_of_scallop):
     #restructure STAR-CCM+ turbulent flow data set
+    CFD_dataset = genfromtxt('TurbulentFlowfield'+str(length_of_scallop)+'.csv', delimiter=',')
+
+    # variable declarations
+
     for i in range(len(CFD_dataset)):
         x_index = np.int(CFD_dataset[i, 0])
         z_index = np.int(CFD_dataset[i, 1])
@@ -193,9 +537,6 @@ def turbulent_flowfield(CFD_dataset, x_array, one_period, number_of_scallops, x_
             
     return u_water, w_water
     
-    
-    
-
 def settling_velocity(rho_sediment, rho_fluid, grain_size):
     R = (rho_sediment/rho_fluid - 1)
     g = 981 # cm*s^-2
@@ -224,7 +565,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     delta = crest_height + (0.5 + 3.5 * xi)*D
     Hf = delta[1]
 
-        
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
     dt = dx / u_w0
@@ -232,7 +572,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     # define machine epsilon threshold
     eps2=np.sqrt( u_w0*np.finfo(float).eps )
 
-    
     for i in range(len(x0)):    #begin one particle at rest at each x-position at its fall height (Hf per Wilson, 1987)
         h = 0
         t = 0
