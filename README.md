@@ -1,4 +1,4 @@
-# DKARST: modeling abrasional wear of scalloped bedrock in caves
+# DKARST: modeling abrasional wear of scalloped bedrock in caves (note: this is developmental research grade software that has not been subject to review)
 ## Rachel Bosch and Dylan Ward
 
 ### Abstract
