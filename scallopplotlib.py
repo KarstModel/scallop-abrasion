@@ -23,16 +23,12 @@ def __init__(self):
 ##function returns pars, in which C_1 = pars[0] and C_2 = pars[1]; in addition to the associates standard deviation and residuals from fitting, and a scatter plot with fit curve
 def average_velocities_plot(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    # Diam5 = genfromtxt('diam5.csv', delimiter=',')
-    # Vels5 = genfromtxt('VelocityAvg5.csv', delimiter=',')
     not_nan_idx = np.where(~np.isnan(VelocityAvg))
     diameter_array=diameter_array[not_nan_idx]
     VelocityAvg=VelocityAvg[not_nan_idx]
     w_s = da.settling_velocity(rho_sediment, rho_fluid, diameter_array)
-    #w_s_5 = da.settling_velocity(rho_sediment, rho_fluid, Diam5)
     axs.scatter((diameter_array*10), VelocityAvg, label = 'simulated impact velocity')
     axs.plot(diameter_array*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
-    #axs.scatter((Diam5*10), Vels5, label = 'simulated impact velocity on 5.0 cm scallops', zorder = 0)
     
     def settling_velocity(D, C_1, C_2):
         R = 1.65
@@ -54,6 +50,105 @@ def average_velocities_plot(rho_sediment, rho_fluid, diameter_array, scallop_len
     axs.set_title('Particle velocities over '+str(scallop_length)+' cm scallops')
     
     return pars, stdevs, res, fig, axs
+
+def average_velocities_mult_scallop_lengths(rho_sediment, rho_fluid):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    Diam1 = genfromtxt('./outputs/diam1turbulent.csv', delimiter=',')
+    Vels1 = genfromtxt('./outputs/VelocityAvg1turbulent.csv', delimiter=',')
+    Diam2_5 = genfromtxt('./outputs/diam2.5turbulent.csv', delimiter=',')
+    Vels2_5 = genfromtxt('./outputs/VelocityAvg2.5turbulent.csv', delimiter=',')
+    Diam5 = genfromtxt('./outputs/diam5turbulent.csv', delimiter=',')
+    Vels5 = genfromtxt('./outputs/VelocityAvg5turbulent.csv', delimiter=',')
+    Diam10 = genfromtxt('./outputs/diam10turbulent.csv', delimiter=',')
+    Vels10 = genfromtxt('./outputs/VelocityAvg10turbulent.csv', delimiter=',')
+    
+    not_nan_idx_1 = np.where(~np.isnan(Vels1))
+    diam1 = Diam1[not_nan_idx_1]
+    vels1 =Vels1[not_nan_idx_1]
+    not_nan_idx_2_5 = np.where(~np.isnan(Vels2_5))
+    diam2_5 = Diam2_5[not_nan_idx_2_5]
+    vels2_5 = Vels2_5[not_nan_idx_2_5]
+    not_nan_idx_5 = np.where(~np.isnan(Vels5))
+    diam5 = Diam5[not_nan_idx_5]
+    vels5 =Vels5[not_nan_idx_5]
+    not_nan_idx_10 = np.where(~np.isnan(Vels10))
+    diam10 = Diam10[not_nan_idx_10]
+    vels10 =Vels10[not_nan_idx_10]
+    
+    w_s = da.settling_velocity(rho_sediment, rho_fluid, diam10)
+    axs.plot(diam10*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
+    axs.scatter((diam1*10), vels1, label = 'simulated impact velocity on 1.0 cm scallops')
+    axs.scatter((diam2_5*10), vels2_5, label = 'simulated impact velocity on 2.5 cm scallops')
+    axs.scatter((diam5*10), vels5, label = 'simulated impact velocity on 5.0 cm scallops')
+    axs.scatter((diam10*10), vels10, label = 'simulated impact velocity on 5.0 cm scallops')
+        
+    plt.legend()
+    plt.semilogx()
+    axs.set_xlabel('particle grainsize (mm)')
+    axs.set_ylabel('velocity (cm/s)') 
+    axs.set_title('Particle velocities at impact upon scalloped floors')
+    
+    return fig, axs
+
+##combine velocity data sets and fit a curve of forn Ferguson and Church
+def velocity_curve_fitting(rho_sediment, rho_fluid):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    Diam1 = genfromtxt('./outputs/diam1turbulent.csv', delimiter=',')
+    Vels1 = genfromtxt('./outputs/VelocityAvg1turbulent.csv', delimiter=',')
+    Diam2_5 = genfromtxt('./outputs/diam2.5turbulent.csv', delimiter=',')
+    Vels2_5 = genfromtxt('./outputs/VelocityAvg2.5turbulent.csv', delimiter=',')
+    Diam5 = genfromtxt('./outputs/diam5turbulent.csv', delimiter=',')
+    Vels5 = genfromtxt('./outputs/VelocityAvg5turbulent.csv', delimiter=',')
+    Diam10 = genfromtxt('./outputs/diam10turbulent.csv', delimiter=',')
+    Vels10 = genfromtxt('./outputs/VelocityAvg10turbulent.csv', delimiter=',')
+    
+    not_nan_idx_1 = np.where(~np.isnan(Vels1))
+    diam1 = Diam1[not_nan_idx_1]
+    vels1 =Vels1[not_nan_idx_1]
+    not_nan_idx_2_5 = np.where(~np.isnan(Vels2_5))
+    diam2_5 = Diam2_5[not_nan_idx_2_5]
+    vels2_5 = Vels2_5[not_nan_idx_2_5]
+    not_nan_idx_5 = np.where(~np.isnan(Vels5))
+    diam5 = Diam5[not_nan_idx_5]
+    vels5 =Vels5[not_nan_idx_5]
+    not_nan_idx_10 = np.where(~np.isnan(Vels10))
+    diam10 = Diam10[not_nan_idx_10]
+    vels10 =Vels10[not_nan_idx_10]
+    
+    diameters = diam1
+    diameters.append(diam2_5)
+    diameters.append(diam5)
+    diameters.append(diam10)
+    velocities = vels1
+    velocities.append(vels2_5)
+    velocities.append(vels5)
+    velocities.append(vels10)
+    
+    def settling_velocity(D, C_1, C_2):
+        R = 1.65
+        g = 981 # cm*s^-2
+        nu = 0.01307  # g*cm^-1*s^-1
+        return (R*g*D**2)/((C_1*nu)+np.sqrt(0.75*C_2*R*g*D**3))
+    
+    pars, cov = curve_fit(f=settling_velocity, xdata=diameters, ydata=velocities, p0=[24, 1.2], bounds=(-np.inf, np.inf))
+    # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
+    stdevs = np.sqrt(np.diag(cov))
+    # Calculate the residuals
+    res = velocities - settling_velocity(diameters, *pars)
+    axs.plot(diameters*10, settling_velocity(diameters, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with C_1= '+str(round(pars[0], 2))+' and C_2= '+str(round(pars[1], 2)))
+    
+    w_s = da.settling_velocity(rho_sediment, rho_fluid, diameters)
+    axs.plot(diameters*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
+    axs.scatter((diameters*10), velocities, label = 'simulated impact velocity on all scallop lengths')
+        
+    plt.legend()
+    plt.semilogx()
+    axs.set_xlabel('particle grainsize (mm)')
+    axs.set_ylabel('velocity (cm/s)') 
+    axs.set_title('Particle velocities at impact upon scalloped floors')
+    
+    return pars, stdevs, res, fig, axs
+
 
 
 # # =============================================================================
@@ -92,6 +187,7 @@ def work_energy_theorem_plot(EnergyAtImpact, rho_bedrock, diameter_array, x_arra
         axs.set_title('Erosion rate by work-energy theorem, ' + str(round(diameter_array[j]*10, 3)) + ' mm '+ grain +' on floor scallops')
     
     plt.show()
+    return fig, axs
 
 # ### 2. BUFFALO WILD WINGS AND WECK
 def lamb_erosion_rates_plot(diameter_array, ErosionAtImpact, x_array, scallop_length):
@@ -116,6 +212,30 @@ def abrasion_one_scallop_plot(diameter_array, NormErosionAvg, NumberOfImpactsByG
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     
     axs.scatter((diameter_array*10), (NormErosionAvg), label = 'simulated abrasional erosion on '+str(scallop_length)+' cm scallops')
+    plt.semilogx()
+    plt.legend(loc = 'center left')
+    axs.set_title('Abrasion Rate Normalized by Number of Impacts (>=5)')
+    axs.set_xlabel('particle grainsize (mm)')
+    axs.set_ylabel('abrasional erosion rate (mm/yr)')
+    axs.grid(True, which = 'both', axis = 'both')
+    
+    return fig, axs
+
+def abrasion_one_scallop_plot_mult_scallop_lengths():
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    Diam1 = genfromtxt('./outputs/diam1turbulent.csv', delimiter=',')
+    NEA1 = genfromtxt('./outputs/NormErosionAvg1turbulent.csv', delimiter=',')
+    Diam2_5 = genfromtxt('./outputs/diam2.5turbulent.csv', delimiter=',')
+    NEA2_5 = genfromtxt('./outputs/NormErosionAv2.51turbulent.csv', delimiter=',')
+    Diam5 = genfromtxt('./outputs/diam5turbulent.csv', delimiter=',')
+    NEA5 = genfromtxt('./outputs/NormErosionAvg5turbulent.csv', delimiter=',')
+    Diam10 = genfromtxt('./outputs/diam10turbulent.csv', delimiter=',')
+    NEA10 = genfromtxt('./outputs/NormErosionAvg10turbulent.csv', delimiter=',')
+    
+    axs.scatter((Diam1*10), (NEA1), label = 'simulated abrasional erosion on 1.0 cm scallops')
+    axs.scatter((Diam2_5*10), (NEA2_5), label = 'simulated abrasional erosion on 2.5 cm scallops')
+    axs.scatter((Diam5*10), (NEA5), label = 'simulated abrasional erosion on 5.0 cm scallops')
+    axs.scatter((Diam10*10), (NEA10), label = 'simulated abrasional erosion on 10 cm scallops')
     plt.semilogx()
     plt.legend(loc = 'center left')
     axs.set_title('Abrasion Rate Normalized by Number of Impacts (>=5)')
@@ -219,7 +339,7 @@ def Gearys_test(NormErosionAvg):
     
     return Gearys_test
 
-def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profile, XAtImpact, ZAtImpact, uScal):   
+def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profile, XAtImpact, ZAtImpact, uScal, scallop_length):   
     
     GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
@@ -259,6 +379,7 @@ def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profi
     plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
     cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
     axs[-1].set_xlabel('x (cm)')
+    fig.title('Impact locations on '+str(scallop_length)+' cm scallops, colored by particle kinetic energy')
     
     return fig, axs
     
