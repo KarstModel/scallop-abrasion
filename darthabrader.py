@@ -556,14 +556,14 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
-    drag = (3 * rho_w/(rho_w + 2 * rho_s))  ##### velocity factor for sphere transported by fluid (Landau and Lifshitz, 1995)
     g = 981
     m = np.pi * rho_s * D**3 / 6
     
     #calculate bedload height as function of grain size (Wilson, 1987)
-    xi = np.linspace(0, 1, 5)
-    delta = crest_height + (0.5 + 3.5 * xi)*D
-    Hf = delta[1]
+    # xi = np.linspace(0, 1, 5)
+    # delta = crest_height + (0.5 + 3.5 * xi)*D
+    # Hf = delta[1]
+    Hf = crest_height + 1
 
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
@@ -592,7 +592,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
                 break
                 
             pi_z = (-(Hf/(l_ds)**2)*(pi_x - x0[i])**2) + Hf 
-            pi_u = drag * u_w0
+            drag_coef = 0.4577  # for Blumberg & Curl assumption of re = 23300
+            pi_u = drag_coef * u_w0
             pi_w = -(Hf - pi_z)/t            
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)  
             x_idx = (i + h)
@@ -620,8 +621,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt                        # particle i x-position at time = t
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2      # particle i z-position at time = t  
-            pi_u = drag * u_water[int(z_idx), int(x_idx)]                                        # particle i x-velocity at time = t
-            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt) # particle i z-velocity at time = t
+            pi_u = drag_coef * u_water[int(z_idx), int(x_idx)]                                        # particle i x-velocity at time = t
+            pi_w = sediment_location[h, 4] + (drag_coef * w_water[int(z_idx), int(x_idx)]) + (a * dt) # particle i z-velocity at time = t
             if pi_w < w_s:
                 pi_w = w_s
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
@@ -696,8 +697,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
-            pi_u = drag * u_water[int(z_idx), int(x_idx)]
-            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
+            pi_u = drag_coef * u_water[int(z_idx), int(x_idx)]
+            pi_w = sediment_location[h, 4] + (drag_coef * w_water[int(z_idx), int(x_idx)]) + (a * dt)
             if pi_w < w_s:
                 pi_w = w_s
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
