@@ -43,7 +43,7 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-l32 = 1 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+l32 = 2.5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 1000  #number of grainsizes to simulate in diameter array
 numScal = 24  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
@@ -81,8 +81,8 @@ elif flow_regime == 'turbulent':
 
 # In[6]:
 # definitions and parameters
-# grain_diam_max = 0.5 * l32 
-grain_diam_max = 0.5
+grain_diam_max = 0.5 * l32 
+# grain_diam_max = 0.5
 grain_diam_min = 0.002
 
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
@@ -179,20 +179,23 @@ for r in range(len(diam)):
         NormErosionAvg[r] = 0
 
 ####save all data
-np.savetxt('./outputs2/VelocityAtImpact'+str(l32)+flow_regime+'.csv',VelocityAtImpact,delimiter=",")
-np.savetxt('./outputs2/ImpactEnergyAvg'+str(l32)+flow_regime+'.csv',ImpactEnergyAvg,delimiter=",")
-np.savetxt('./outputs2/VelocityAvg'+str(l32)+flow_regime+'.csv',VelocityAvg,delimiter=",")
-np.savetxt('./outputs2/EnergyAtImpact'+str(l32)+flow_regime+'.csv',EnergyAtImpact,delimiter=",")
-np.savetxt('./outputs2/XAtImpact'+str(l32)+flow_regime+'.csv',XAtImpact,delimiter=",")
-np.savetxt('./outputs2/ZAtImpact'+str(l32)+flow_regime+'.csv',ZAtImpact,delimiter=",")
-np.savetxt('./outputs2/ErosionAtImpact'+str(l32)+flow_regime+'.csv',ErosionAtImpact,delimiter=",")
-np.savetxt('./outputs2/AverageVelocities'+str(l32)+flow_regime+'.csv',AverageVelocities,delimiter=",")
-np.savetxt('./outputs2/MaxVelocities'+str(l32)+flow_regime+'.csv',MaxVelocities,delimiter=",")
-np.savetxt('./outputs2/diam'+str(l32)+flow_regime+'.csv',diam,delimiter=",")
-np.savetxt('./outputs2/TotalImpactEnergy'+str(l32)+flow_regime+'.csv',TotalImpactEnergy,delimiter=",")
-np.savetxt('./outputs2/ParticleDrag'+str(l32)+flow_regime+'.csv',ParticleDrag,delimiter=",")
-np.savetxt('./outputs2/ParticleReynolds'+str(l32)+flow_regime+'.csv',ParticleReynolds,delimiter=",")
-np.savetxt('./outputs2/NormErosionAvg'+str(l32)+flow_regime+'.csv',NormErosionAvg,delimiter=",")
+import datetime
+now = datetime.datetime.now()
+time_stamp = now.strftime('%Y-%m-%d-%H:%M:%S')
+np.savetxt('./outputs2/VelocityAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',VelocityAtImpact,delimiter=",")
+np.savetxt('./outputs2/ImpactEnergyAvg'+str(l32)+flow_regime+time_stamp+'.csv',ImpactEnergyAvg,delimiter=",")
+np.savetxt('./outputs2/VelocityAvg'+str(l32)+flow_regime+time_stamp+'.csv',VelocityAvg,delimiter=",")
+np.savetxt('./outputs2/EnergyAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',EnergyAtImpact,delimiter=",")
+np.savetxt('./outputs2/XAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',XAtImpact,delimiter=",")
+np.savetxt('./outputs2/ZAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',ZAtImpact,delimiter=",")
+np.savetxt('./outputs2/ErosionAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',ErosionAtImpact,delimiter=",")
+np.savetxt('./outputs2/AverageVelocities'+str(l32)+flow_regime+time_stamp+'.csv',AverageVelocities,delimiter=",")
+np.savetxt('./outputs2/MaxVelocities'+str(l32)+flow_regime+time_stamp+'.csv',MaxVelocities,delimiter=",")
+np.savetxt('./outputs2/diam'+str(l32)+flow_regime+time_stamp+'.csv',diam,delimiter=",")
+np.savetxt('./outputs2/TotalImpactEnergy'+str(l32)+flow_regime+time_stamp+'.csv',TotalImpactEnergy,delimiter=",")
+np.savetxt('./outputs2/ParticleDrag'+str(l32)+flow_regime+time_stamp+'.csv',ParticleDrag,delimiter=",")
+np.savetxt('./outputs2/ParticleReynolds'+str(l32)+flow_regime+time_stamp+'.csv',ParticleReynolds,delimiter=",")
+np.savetxt('./outputs2/NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv',NormErosionAvg,delimiter=",")
 
 ####plot results, all plotting schemes available in scallopplotlib.py
 pars, stdevs, res, fig, axs = spl.average_velocities_plot(rho_quartz, rho_water, diam, l32, VelocityAvg)
