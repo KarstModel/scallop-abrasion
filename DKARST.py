@@ -81,8 +81,9 @@ elif flow_regime == 'turbulent':
 
 # In[6]:
 # definitions and parameters
-grain_diam_max = 0.5 * l32 
-grain_diam_min = 0.002 * l32
+# grain_diam_max = 0.5 * l32 
+grain_diam_max = 0.5
+grain_diam_min = 0.002
 
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -100,10 +101,10 @@ MaxVelocities = np.empty_like(diam)
 # loop over diameter array to run the saltation function for each grainsize
 i = 0
 for D in diam:
-    xi = np.linspace(0, 1, 5)
-    delta = cH + (0.5 + 3.5 * xi)*D   # bedload thickness equation (Wilson, 1987)
-    Hf = delta[1]    #beload thickness (cm)
-    
+    # xi = np.linspace(0, 1, 5)
+    # delta = cH + (0.5 + 3.5 * xi)*D   # bedload thickness equation (Wilson, 1987)
+    # Hf = delta[1]    #beload thickness (cm)
+    Hf = cH + 1
     if D < 0.0063:
         grain = 'silt'
     elif D >= 0.0063 and D < 0.2:
@@ -177,7 +178,7 @@ for r in range(len(diam)):
     else:
         NormErosionAvg[r] = 0
 
-#####save all data
+####save all data
 np.savetxt('./outputs2/VelocityAtImpact'+str(l32)+flow_regime+'.csv',VelocityAtImpact,delimiter=",")
 np.savetxt('./outputs2/ImpactEnergyAvg'+str(l32)+flow_regime+'.csv',ImpactEnergyAvg,delimiter=",")
 np.savetxt('./outputs2/VelocityAvg'+str(l32)+flow_regime+'.csv',VelocityAvg,delimiter=",")
