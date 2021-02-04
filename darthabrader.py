@@ -725,6 +725,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
                 next_x_idx = np.int(np.rint((pi_x/0.05)))
             except:
                 print('NaN in pi_x. this is fixed and should never happen again!')
+                print('ax is',ax,'and pi_x is', pi_x)
                 next_x_idx = -9999
                 raise Exception
                 
