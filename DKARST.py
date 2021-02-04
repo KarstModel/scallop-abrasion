@@ -26,6 +26,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import darthabrader as da
 import scallopplotlib as spl
+from os.path import join
 
 # =============================================================================
 
@@ -43,9 +44,10 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-l32 = 2.5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 1000  #number of grainsizes to simulate in diameter array
-numScal = 24  #number of scallops
+outfolder='./outputs2'  # make sure this exists first
+l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+n = 3  #number of grainsizes to simulate in diameter array
+numScal = 6  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
@@ -182,20 +184,20 @@ for r in range(len(diam)):
 import datetime
 now = datetime.datetime.now()
 time_stamp = now.strftime('%Y-%m-%d-%H:%M:%S')
-np.savetxt('./outputs2/VelocityAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',VelocityAtImpact,delimiter=",")
-np.savetxt('./outputs2/ImpactEnergyAvg'+str(l32)+flow_regime+time_stamp+'.csv',ImpactEnergyAvg,delimiter=",")
-np.savetxt('./outputs2/VelocityAvg'+str(l32)+flow_regime+time_stamp+'.csv',VelocityAvg,delimiter=",")
-np.savetxt('./outputs2/EnergyAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',EnergyAtImpact,delimiter=",")
-np.savetxt('./outputs2/XAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',XAtImpact,delimiter=",")
-np.savetxt('./outputs2/ZAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',ZAtImpact,delimiter=",")
-np.savetxt('./outputs2/ErosionAtImpact'+str(l32)+flow_regime+time_stamp+'.csv',ErosionAtImpact,delimiter=",")
-np.savetxt('./outputs2/AverageVelocities'+str(l32)+flow_regime+time_stamp+'.csv',AverageVelocities,delimiter=",")
-np.savetxt('./outputs2/MaxVelocities'+str(l32)+flow_regime+time_stamp+'.csv',MaxVelocities,delimiter=",")
-np.savetxt('./outputs2/diam'+str(l32)+flow_regime+time_stamp+'.csv',diam,delimiter=",")
-np.savetxt('./outputs2/TotalImpactEnergy'+str(l32)+flow_regime+time_stamp+'.csv',TotalImpactEnergy,delimiter=",")
-np.savetxt('./outputs2/ParticleDrag'+str(l32)+flow_regime+time_stamp+'.csv',ParticleDrag,delimiter=",")
-np.savetxt('./outputs2/ParticleReynolds'+str(l32)+flow_regime+time_stamp+'.csv',ParticleReynolds,delimiter=",")
-np.savetxt('./outputs2/NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv',NormErosionAvg,delimiter=",")
+np.savetxt(join(outfolder,'VelocityAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),VelocityAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'ImpactEnergyAvg'+str(l32)+flow_regime+time_stamp+'.csv'),ImpactEnergyAvg,delimiter=",")
+np.savetxt(join(outfolder,'VelocityAvg'+str(l32)+flow_regime+time_stamp+'.csv'),VelocityAvg,delimiter=",")
+np.savetxt(join(outfolder,'EnergyAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),EnergyAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'XAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),XAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'ZAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),ZAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'ErosionAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),ErosionAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'AverageVelocities'+str(l32)+flow_regime+time_stamp+'.csv'),AverageVelocities,delimiter=",")
+np.savetxt(join(outfolder,'MaxVelocities'+str(l32)+flow_regime+time_stamp+'.csv'),MaxVelocities,delimiter=",")
+np.savetxt(join(outfolder,'diam'+str(l32)+flow_regime+time_stamp+'.csv'),diam,delimiter=",")
+np.savetxt(join(outfolder,'TotalImpactEnergy'+str(l32)+flow_regime+time_stamp+'.csv'),TotalImpactEnergy,delimiter=",")
+np.savetxt(join(outfolder,'ParticleDrag'+str(l32)+flow_regime+time_stamp+'.csv'),ParticleDrag,delimiter=",")
+np.savetxt(join(outfolder,'ParticleReynolds'+str(l32)+flow_regime+time_stamp+'.csv'),ParticleReynolds,delimiter=",")
+np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv'),NormErosionAvg,delimiter=",")
 
 ####plot results, all plotting schemes available in scallopplotlib.py
 pars, stdevs, res, fig, axs = spl.average_velocities_plot(rho_quartz, rho_water, diam, l32, VelocityAvg)
