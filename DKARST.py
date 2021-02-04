@@ -45,9 +45,9 @@ plt.close('all')
 # ### user input: 
 # =============================================================================
 outfolder='./outputs2'  # make sure this exists first
-l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 30  #number of grainsizes to simulate in diameter array
-numScal = 24  #number of scallops
+numScal = 12  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
@@ -85,7 +85,7 @@ elif flow_regime == 'turbulent':
 # definitions and parameters
 grain_diam_max = 0.5 * l32 
 # grain_diam_max = 0.5
-grain_diam_min = 0.002
+grain_diam_min = 0.01
 
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -148,19 +148,19 @@ for D in diam:
     print('diam = ' + str(diam[i]) + ' cm')
     i += 1
     
-    # # trajectory figure
-    # fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    # axs.set_xlim(l32*numScal/2, (l32*numScal/2 + l32*4))
-    # axs.set_ylim(0, l32*2)
-    # axs.set_aspect('equal')
-    # axs.plot (x0, z0, 'grey')
-    # ld = np.array(loc_data, dtype=object)
-    # for p in ld[(np.random.randint(len(loc_data),size=1000)).astype(int)]:
-    #     axs.plot(p[:,1], p[:,2], 2, 'blue')
-    # plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey', zorder=101)
-    # axs.set_ylabel('z (cm)')
-    # axs.set_xlabel('x (cm)')
-    # axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on ' +str(l32)+ ' cm floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
+    # trajectory figure
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+    axs.set_xlim(l32*numScal/2, (l32*numScal/2 + l32*4))
+    axs.set_ylim(0, l32*2)
+    axs.set_aspect('equal')
+    axs.plot (x0, z0, 'grey')
+    ld = np.array(loc_data, dtype=object)
+    for p in ld[(np.random.randint(len(loc_data),size=1000)).astype(int)]:
+        axs.plot(p[:,1], p[:,2], 2, 'blue')
+    plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey', zorder=101)
+    axs.set_ylabel('z (cm)')
+    axs.set_xlabel('x (cm)')
+    axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on ' +str(l32)+ ' cm floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
 
 #Process velocity array to average values over one scallop length
 VelocityAvg = np.zeros_like(diam)
