@@ -556,14 +556,14 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
-    drag = (3 * rho_w/(rho_w + 2 * rho_s))  ##### velocity factor for sphere transported by fluid (Landau and Lifshitz, 1995)
-    g = 981
+    g = -981
     m = np.pi * rho_s * D**3 / 6
     
     #calculate bedload height as function of grain size (Wilson, 1987)
-    xi = np.linspace(0, 1, 5)
-    delta = crest_height + (0.5 + 3.5 * xi)*D
-    Hf = delta[1]
+    # xi = np.linspace(0, 1, 5)
+    # delta = crest_height + (0.5 + 3.5 * xi)*D
+    # Hf = delta[1]
+    Hf = crest_height + 1
 
     l_ds = -(3 * Hf * u_w0) / (2 * w_s)  # length of saltation hop for trajectory calculation above CFD flow field (Lamb et al., 2008)
     impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
@@ -592,15 +592,17 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
                 break
                 
             pi_z = (-(Hf/(l_ds)**2)*(pi_x - x0[i])**2) + Hf 
-            pi_u = drag * u_w0
+            drag_coef = 0.4577  # for Blumberg & Curl assumption of re = 23300
+            pi_u = drag_coef * u_w0
             pi_w = -(Hf - pi_z)/t            
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)  
             x_idx = (i + h)
             z_idx = np.rint((pi_z/0.05))
             
         # near-ground portion, with drag
+        dt2=dt/10
         while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
-            t += dt
+            t += dt2
             # get current location with respect to computational mesh at time = t - dt
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
             if sediment_location[h, 2] <= (0.99 * scallop_length):
@@ -608,22 +610,38 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             else:
                 z_idx = scallop_length/.05
             
-            wrel = sediment_location[h, 4] - w_water[int(z_idx), int(x_idx)]
+            wp = sediment_location[h, 4]
+            ww = w_water[int(z_idx), int(x_idx)]
+            wrel = wp - ww
+            up = sediment_location[h, 3]
+            uw = u_water[int(z_idx), int(x_idx)]     
+            urel = up - uw
             
-            # make sure result of squaring wrel is above machine precision
+            # these blocks make sure the relative velocity is sufficiently above 
+            # machine precision that squaring it in the next step doesn't result in underflow
             if np.abs(wrel) > eps2:                                       
                 Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
-                a = -(1 - (rho_w/rho_s)) * g - ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                az = (1 - (rho_w/rho_s)) * g + ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                #print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
             else:
-                a = 0
+                az = 0
+                          
+            if np.abs(urel) > eps2:
+                Re_p = particle_reynolds_number(D, urel, mu_kin)
+                drag_coef = dragcoeff(Re_p)
+                ax = ((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
+                #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
+            else:
+                ax = 0
+                
+            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt2 + 0.5 * ax * dt**2 
+            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt2 + 0.5 * az * dt**2   
             
-            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt                        # particle i x-position at time = t
-            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2      # particle i z-position at time = t  
-            pi_u = drag * u_water[int(z_idx), int(x_idx)]                                        # particle i x-velocity at time = t
-            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt) # particle i z-velocity at time = t
-            if pi_w < w_s:
-                pi_w = w_s
+            pi_u = sediment_location[h, 3] + (ax * dt2)
+            pi_w = sediment_location[h, 4] + (az * dt2)
+            # if pi_w < w_s:
+            #     pi_w = w_s
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
@@ -696,8 +714,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt + 0.5 * a * dt**2   
-            pi_u = drag * u_water[int(z_idx), int(x_idx)]
-            pi_w = sediment_location[h, 4] + (drag * w_water[int(z_idx), int(x_idx)]) + (a * dt)
+            pi_u = drag_coef * u_water[int(z_idx), int(x_idx)]
+            pi_w = sediment_location[h, 4] + (drag_coef * w_water[int(z_idx), int(x_idx)]) + (a * dt)
             if pi_w < w_s:
                 pi_w = w_s
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
@@ -707,6 +725,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
                 next_x_idx = np.int(np.rint((pi_x/0.05)))
             except:
                 print('NaN in pi_x. this is fixed and should never happen again!')
+                print('ax is',ax,'and pi_x is', pi_x)
                 next_x_idx = -9999
                 raise Exception
                 
