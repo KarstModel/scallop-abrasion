@@ -2,3 +2,4 @@
 .DS_Store
 *.pyc
 __pycache__/darthabrader.cpython-38.pyc
+outputs2/*

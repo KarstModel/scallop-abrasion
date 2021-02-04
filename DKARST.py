@@ -46,8 +46,8 @@ plt.close('all')
 # =============================================================================
 outfolder='./outputs2'  # make sure this exists first
 l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 3  #number of grainsizes to simulate in diameter array
-numScal = 6  #number of scallops
+n = 30  #number of grainsizes to simulate in diameter array
+numScal = 24  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5

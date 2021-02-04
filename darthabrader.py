@@ -623,7 +623,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
                 Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
                 az = (1 - (rho_w/rho_s)) * g + ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
-                print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
+                #print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
             else:
                 az = 0
                           
@@ -631,7 +631,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
                 Re_p = particle_reynolds_number(D, urel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
                 ax = ((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
-                print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
+                #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
             else:
                 ax = 0
                 
@@ -640,8 +640,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             
             pi_u = sediment_location[h, 3] + (ax * dt2)
             pi_w = sediment_location[h, 4] + (az * dt2)
-            if pi_w < w_s:
-                pi_w = w_s
+            # if pi_w < w_s:
+            #     pi_w = w_s
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
 
             
