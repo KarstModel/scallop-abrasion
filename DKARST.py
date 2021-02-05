@@ -44,17 +44,17 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-outfolder='./outputs2'  # make sure this exists first
-l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+outfolder='./outputs'  # make sure this exists first
+l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 10  #number of grainsizes to simulate in diameter array
 numScal = 12  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
-    
-#grain_diam_max = 0.1 * l32 
-grain_diam_max = 0.5
-grain_diam_min = 0.1
+
+grain_diam_max = 0.5 * l32 
+# grain_diam_max = 0.5
+grain_diam_min = 0.01
 
 # =============================================================================
 
@@ -67,6 +67,7 @@ uScal = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
 x0, z0 = da.scallop_array(xScal, uScal, numScal, l32)   #initial scallop profile, dimensions in centimeters
 z0 = z0 - np.min(z0)
 cH = np.max(z0)   # crest height
+Hf = cH + 1
 dzdx = np.gradient(z0, x0)
 theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 
@@ -87,6 +88,8 @@ elif flow_regime == 'turbulent':
 
 # In[6]:
 
+# definitions and parameters
+
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
 XAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -103,10 +106,6 @@ MaxVelocities = np.empty_like(diam)
 # loop over diameter array to run the saltation function for each grainsize
 i = 0
 for D in diam:
-    xi = np.linspace(0, 1, 5)
-    delta = cH + (0.5 + 3.5 * xi)*D   # bedload thickness equation (Wilson, 1987)
-    Hf = delta[1]    #beload thickness (cm)
-    #Hf = cH + 3
     if D < 0.0063:
         grain = 'silt'
     elif D >= 0.0063 and D < 0.2:
@@ -122,11 +121,10 @@ for D in diam:
     B = 9.4075*10**-12  # s**2·cm**-2,  abrasion coefficient (Bosch and Ward, 2021)
     
     u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
-    w_s = da.settling_velocity(rho_quartz, rho_water, D) 
     
     # In[10]:
     
-    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, w_s, D, 0.05, theta2, mu_water, cH, l32)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32)
     
     ###sort output data into arrays
     ImpactEnergyTotalAvg = np.average(impact_data[:, 6])
@@ -148,19 +146,10 @@ for D in diam:
     print('diam = ' + str(diam[i]) + ' cm')
     i += 1
     
-    # trajectory figure
-    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    axs.set_xlim(l32*numScal/2, (l32*numScal/2 + l32*4))
-    axs.set_ylim(0, l32*2)
-    axs.set_aspect('equal')
-    axs.plot (x0, z0, 'grey')
-    ld = np.array(loc_data, dtype=object)
-    for p in ld[(np.random.randint(len(loc_data),size=1000)).astype(int)]:
-        axs.plot(p[:,1], p[:,2], 2, 'blue')
-    plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey', zorder=101)
-    axs.set_ylabel('z (cm)')
-    axs.set_xlabel('x (cm)')
-    axs.set_title('Trajectories of randomly selected ' + str(round(D*10, 3)) + ' mm '+ grain +' on ' +str(l32)+ ' cm floor scallops, fall height = ' + str(round(Hf, 3)) + ' cm.')
+    if n <= 30:
+        fig, axs = spl.trajectory_figures(l32, numScal, D, grain, Hf, x0, z0, loc_data)
+        plt.show()
+
 
 #Process velocity array to average values over one scallop length
 VelocityAvg = np.zeros_like(diam)
@@ -183,7 +172,7 @@ for r in range(len(diam)):
 ####save all data
 import datetime
 now = datetime.datetime.now()
-time_stamp = now.strftime('%Y-%m-%d-%H:%M:%S')
+time_stamp = now.strftime('%Y-%m-%d')
 np.savetxt(join(outfolder,'VelocityAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),VelocityAtImpact,delimiter=",")
 np.savetxt(join(outfolder,'ImpactEnergyAvg'+str(l32)+flow_regime+time_stamp+'.csv'),ImpactEnergyAvg,delimiter=",")
 np.savetxt(join(outfolder,'VelocityAvg'+str(l32)+flow_regime+time_stamp+'.csv'),VelocityAvg,delimiter=",")
