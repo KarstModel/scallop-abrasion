@@ -46,11 +46,15 @@ plt.close('all')
 # =============================================================================
 outfolder='./outputs2'  # make sure this exists first
 l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 30  #number of grainsizes to simulate in diameter array
+n = 10  #number of grainsizes to simulate in diameter array
 numScal = 12  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
+    
+#grain_diam_max = 0.1 * l32 
+grain_diam_max = 0.5
+grain_diam_min = 0.1
 
 # =============================================================================
 
@@ -82,10 +86,6 @@ elif flow_regime == 'turbulent':
 
 
 # In[6]:
-# definitions and parameters
-grain_diam_max = 0.5 * l32 
-# grain_diam_max = 0.5
-grain_diam_min = 0.01
 
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
 EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
@@ -103,10 +103,10 @@ MaxVelocities = np.empty_like(diam)
 # loop over diameter array to run the saltation function for each grainsize
 i = 0
 for D in diam:
-    # xi = np.linspace(0, 1, 5)
-    # delta = cH + (0.5 + 3.5 * xi)*D   # bedload thickness equation (Wilson, 1987)
-    # Hf = delta[1]    #beload thickness (cm)
-    Hf = cH + 1
+    xi = np.linspace(0, 1, 5)
+    delta = cH + (0.5 + 3.5 * xi)*D   # bedload thickness equation (Wilson, 1987)
+    Hf = delta[1]    #beload thickness (cm)
+    #Hf = cH + 3
     if D < 0.0063:
         grain = 'silt'
     elif D >= 0.0063 and D < 0.2:

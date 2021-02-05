@@ -570,7 +570,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
     dt = dx / u_w0
     location_data = []
     # define machine epsilon threshold
-    eps2=np.sqrt( u_w0*np.finfo(float).eps )
+    eps2=10*np.sqrt( u_w0*np.finfo(float).eps )
 
     for i in range(len(x0)):    #begin one particle at rest at each x-position at its fall height (Hf per Wilson, 1987)
         h = 0
@@ -580,28 +580,28 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
         sediment_location[0, :] = [t, x0[i], Hf, 0, 0]
            #initial position for ith particle, # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w 
         
-        # upper level of fall, ignores turbulent flow structure
-        while sediment_location[h, 2] >= (0.99 * scallop_length) :
-            h += 1
-            t += dt
-            if i+h < (x0.size - 1):
-                pi_x = x0[i + h]    # new horizontal step location
-            else:
-                #print(' out of bounds in upper zone' )
-                OOB_FLAG = True
-                break
+        # # upper level of fall, ignores turbulent flow structure
+        # while sediment_location[h, 2] >= (0.99 * scallop_length) :
+        #     h += 1
+        #     t += dt
+        #     if i+h < (x0.size - 1):
+        #         pi_x = x0[i + h]    # new horizontal step location
+        #     else:
+        #         #print(' out of bounds in upper zone' )
+        #         OOB_FLAG = True
+        #         break
                 
-            pi_z = (-(Hf/(l_ds)**2)*(pi_x - x0[i])**2) + Hf 
-            drag_coef = 0.4577  # for Blumberg & Curl assumption of re = 23300
-            pi_u = drag_coef * u_w0
-            pi_w = -(Hf - pi_z)/t            
-            sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)  
-            x_idx = (i + h)
-            z_idx = np.rint((pi_z/0.05))
+        #     pi_z = (-(Hf/(l_ds)**2)*(pi_x - x0[i])**2) + Hf 
+        #     drag_coef = 0.4577  # for Blumberg & Curl assumption of re = 23300
+        #     pi_u = drag_coef * u_w0
+        #     pi_w = -(Hf - pi_z)/t            
+        #     sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)  
+        #     x_idx = (i + h)
+        #     z_idx = np.rint((pi_z/0.05))
             
         # near-ground portion, with drag
-        dt2=dt/10
-        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
+        dt2=dt/50
+        while not OOB_FLAG and h < x0.size: # and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
             t += dt2
             # get current location with respect to computational mesh at time = t - dt
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
@@ -635,8 +635,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, w_s, D, dx
             else:
                 ax = 0
                 
-            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt2 + 0.5 * ax * dt**2 
-            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt2 + 0.5 * az * dt**2   
+            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt2 + 0.5 * ax * dt2**2 
+            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt2 + 0.5 * az * dt2**2   
             
             pi_u = sediment_location[h, 3] + (ax * dt2)
             pi_w = sediment_location[h, 4] + (az * dt2)
