@@ -571,30 +571,37 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     # define machine epsilon threshold
     eps2=np.sqrt( u_w0*np.finfo(float).eps )
 
-    for i in range(len(x0)):    #begin one particle at rest at each x-position at its fall height (Hf per Wilson, 1987)
+    for i in range(len(x0)-1):    #begin one particle at rest at each x-position at its fall height (Hf)
         h = 0
         t = 0
         OOB_FLAG = False
         sediment_location = np.zeros(shape=(1, 5)) 
         x_init = x0[i]
         z_init = Hf
-        x_idx = np.rint(x_init/0.05)
         z_idx = np.rint(z_init/0.05)
+        x_idx = np.rint(x_init/0.05)
         u_init = u_water[int(z_idx), int(x_idx)]
         w_init = w_water[int(z_idx), int(x_idx)]
         sediment_location[0, :] = [t, x_init, z_init, u_init, w_init]   #initial position and velocity ith particle 
         print ('initial velocity(x,z) = (' + str(u_init) + ', ' + str(w_init) +')')
         
-        dt2=dt/20
-        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > scallop_elevation[h]:        #while that particle is in transport in the water
+        dt2=dt/2
+        while not OOB_FLAG and sediment_location[h, 2] >= scallop_elevation[int(x_idx)]:        #while that particle is in transport in the water
             t += dt2
             # get current location with respect to computational mesh at time = t - dt
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
             z_idx = np.rint((sediment_location[h, 2]/0.05))
-            if z_idx >= np.shape(w_water)[0] or z_idx < 0:
+            if z_idx < 0:
+                z_idx = 0
+            elif z_idx >= np.shape(w_water)[0]:
                 OOB_FLAG = True
-                print('particle left flow region!')
+                print('out of bounds vertically!')
                 break
+            if x_idx < 0  or x_idx >= np.shape(u_water)[1]:
+                OOB_FLAG = True
+                print('out of bounds horizontally!')
+                break
+
             
             wp = sediment_location[h, 4]
             ww = w_water[int(z_idx), int(x_idx)]
@@ -623,7 +630,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt2 + 0.5 * ax * dt2**2 
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt2 + 0.5 * az * dt2**2   
-            
             pi_u = sediment_location[h, 3] + (ax * dt2)
             pi_w = sediment_location[h, 4] + (az * dt2)
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
@@ -638,10 +644,9 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
             #print ('next_x', next_x_idx)
             if next_x_idx >= x0.size or next_x_idx < 0:
-                #print('out of bounds in lower zone!')
+                print('out of bounds horizontally!')
                 OOB_FLAG = True
                 break                        
-
             
             if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
                 impact_data[i, :5] = sediment_location[h+1]
@@ -666,17 +671,23 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             impact_data[i, 6] += 0 
         
 # for intuitive-looking trajectory plotting, draw the trajectories through the scallops:
-        while not OOB_FLAG and h < x0.size and sediment_location[h, 2] > 0:        #while that particle is in transport in the water
+        while not OOB_FLAG and sediment_location[h, 2] >= 0:        #while that particle is in transport in the water
           
             t += dt
         # get current indices -  this should be the previous h, above
             x_idx = np.rint((sediment_location[h, 1]/0.05))                
             z_idx = np.rint((sediment_location[h, 2]/0.05))
-            if z_idx >= np.shape(w_water)[0] or z_idx < 0:
+            if z_idx < 0:
+                z_idx = 0
+            elif z_idx >= np.shape(w_water)[0]:
                 OOB_FLAG = True
-                print('particle left flow region!')
+                print('out of bounds vertically!')
                 break
-            
+            if x_idx < 0  or x_idx >= np.shape(u_water)[1]:
+                OOB_FLAG = True
+                print('out of bounds horizontally!')
+                break
+
             wp = sediment_location[h, 4]
             ww = w_water[int(z_idx), int(x_idx)]
             wrel = wp - ww
@@ -704,7 +715,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
             pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt2 + 0.5 * ax * dt2**2 
             pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt2 + 0.5 * az * dt2**2   
-            
             pi_u = sediment_location[h, 3] + (ax * dt2)
             pi_w = sediment_location[h, 4] + (az * dt2)
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)        
@@ -719,16 +729,14 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
         #print ('next_x', next_x_idx)
             if next_x_idx >= x0.size or next_x_idx < 0:
-            #print('out of bounds in lower zone!')
+                print('out of ounds horizontally!')
                 OOB_FLAG = True
-                break                        
-
-            
+                break                                    
             if next_x_idx > 0 and pi_z <= 0:
                 break
             
             h+=1
-            #print('h',h)
+            print('h',h)
 
         location_data.append(sediment_location)   # store trajectory for plotting        
         #print('bedload thickness = ', Hf)
