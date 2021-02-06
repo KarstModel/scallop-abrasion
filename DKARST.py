@@ -44,17 +44,17 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-outfolder='./outputs'  # make sure this exists first
+outfolder='./outputs2'  # make sure this exists first
 l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 10  #number of grainsizes to simulate in diameter array
+n = 15  #number of grainsizes to simulate in diameter array
 numScal = 12  #number of scallops
-flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
+flow_regime = 'laminar'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
 
-grain_diam_max = 0.5 * l32 
-# grain_diam_max = 0.5
-grain_diam_min = 0.01
+#grain_diam_max = 0.5 * l32 
+grain_diam_max = 0.5
+grain_diam_min = 0.1
 
 # =============================================================================
 
@@ -67,7 +67,7 @@ uScal = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
 x0, z0 = da.scallop_array(xScal, uScal, numScal, l32)   #initial scallop profile, dimensions in centimeters
 z0 = z0 - np.min(z0)
 cH = np.max(z0)   # crest height
-Hf = cH + 1
+#Hf = cH + 1
 dzdx = np.gradient(z0, x0)
 theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 
