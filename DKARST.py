@@ -45,7 +45,7 @@ plt.close('all')
 # ### user input: 
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
-l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 10  #number of grainsizes to simulate in diameter array
 numScal = 12  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
@@ -100,7 +100,6 @@ ParticleDrag = np.empty_like(diam)
 ParticleReynolds = np.empty_like(diam)
 ImpactEnergyAvg = np.empty_like(diam)
 TotalImpactEnergy = np.empty_like(diam)
-AverageVelocities = np.empty_like(diam)
 MaxVelocities = np.empty_like(diam)
 
 # loop over diameter array to run the saltation function for each grainsize
@@ -127,11 +126,10 @@ for D in diam:
     impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32)
     
     ###sort output data into arrays
-    ImpactEnergyTotalAvg = np.average(impact_data[:, 6])
     NumberImpacts = np.count_nonzero(impact_data[:, 6])
-    if (NumberImpacts == 0):
-        ImpactEnergyAvg[i] = ImpactEnergyTotalAvg/NumberImpacts 
     TotalImpactEnergy[i] = np.sum(impact_data[300:401, 6])
+    if (NumberImpacts != 0):
+        ImpactEnergyAvg[i] = TotalImpactEnergy[i]/NumberImpacts 
     ParticleDrag[i] = np.average(impact_data[:, 8])
     ParticleReynolds[i] = np.average(impact_data[:, 7])
     EnergyAtImpact[i, :] = impact_data[:, 6]
@@ -140,7 +138,6 @@ for D in diam:
     VelocityAtImpact[i, :] = impact_data[:, 5]
     ErosionAtImpact[i, :] = B * (impact_data[:, 5])**3    ##  (cm/s) Lamb et al., 2008
     #of the grains, that have recorded impact, those with negative impact velocities are directed into the scalloped surface
-    AverageVelocities[i]= np.average(impact_data[:,5][impact_data[:,5]<0])
     MaxVelocities[i] = -np.min(impact_data[:,5])
     
     print('diam = ' + str(diam[i]) + ' cm')
@@ -180,7 +177,6 @@ np.savetxt(join(outfolder,'EnergyAtImpact'+str(l32)+flow_regime+time_stamp+'.csv
 np.savetxt(join(outfolder,'XAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),XAtImpact,delimiter=",")
 np.savetxt(join(outfolder,'ZAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),ZAtImpact,delimiter=",")
 np.savetxt(join(outfolder,'ErosionAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),ErosionAtImpact,delimiter=",")
-np.savetxt(join(outfolder,'AverageVelocities'+str(l32)+flow_regime+time_stamp+'.csv'),AverageVelocities,delimiter=",")
 np.savetxt(join(outfolder,'MaxVelocities'+str(l32)+flow_regime+time_stamp+'.csv'),MaxVelocities,delimiter=",")
 np.savetxt(join(outfolder,'diam'+str(l32)+flow_regime+time_stamp+'.csv'),diam,delimiter=",")
 np.savetxt(join(outfolder,'TotalImpactEnergy'+str(l32)+flow_regime+time_stamp+'.csv'),TotalImpactEnergy,delimiter=",")
