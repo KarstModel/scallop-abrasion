@@ -563,7 +563,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     # xi = np.linspace(0, 1, 5)
     # delta = crest_height + (0.5 + 3.5 * xi)*D
     # Hf = delta[1]
-    Hf = crest_height + 1
+    Hf = crest_height + 4
 
     impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
     dt = dx / u_w0
