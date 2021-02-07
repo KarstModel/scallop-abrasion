@@ -19,6 +19,24 @@ from matplotlib import cm
 def __init__(self):
     pass
 
+def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type, fall_height, scallop_x, scallop_z, loc_data):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
+    axs.set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops/2 + scallop_length*4))
+    axs.set_ylim(0, scallop_length*2)
+    axs.set_aspect('equal')
+    axs.plot (scallop_x, scallop_z, 'grey')
+    ld = np.array(loc_data, dtype=object)
+
+    for p in ld[(np.random.randint(len(loc_data)-1,size=20)).astype(int)]:
+        axs.plot(p[:,1], p[:,2], 2, 'k.')
+        
+    plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey', zorder=101)
+    axs.set_ylabel('z (cm)')
+    axs.set_xlabel('x (cm)')
+    axs.set_title('Trajectories of randomly selected ' + str(round(diameter*10, 3)) + ' mm '+ grain_type +' on ' +str(scallop_length)+ ' cm floor scallops, fall height = ' + str(round(fall_height, 3)) + ' cm.')
+    return fig, axs
+
+
 ##plot average velocities of particles as a function of particle diameter. fit these data to Ferguson and Church curve allowing C_1 and C_2 parameters to vary.
 ##function returns pars, in which C_1 = pars[0] and C_2 = pars[1]; in addition to the associates standard deviation and residuals from fitting, and a scatter plot with fit curve
 def average_velocities_plot(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg):
