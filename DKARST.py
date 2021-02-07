@@ -46,14 +46,13 @@ plt.close('all')
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
 l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 10  #number of grainsizes to simulate in diameter array
-numScal = 12  #number of scallops
+n = 20  #number of grainsizes to simulate in diameter array
+numScal = 6  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
-grain_diam_max = 0.5 * l32 
-# grain_diam_max = 0.5
-grain_diam_min = 0.01
+grain_diam_max = l32 
+grain_diam_min = 0.001
 
 
 
@@ -68,7 +67,6 @@ uScal = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
 x0, z0 = da.scallop_array(xScal, uScal, numScal, l32)   #initial scallop profile, dimensions in centimeters
 z0 = z0 - np.min(z0)
 cH = np.max(z0)   # crest height
-Hf = cH + 1
 dzdx = np.gradient(z0, x0)
 theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 
@@ -119,7 +117,11 @@ for D in diam:
     Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
     mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
     B = 9.4075*10**-12  # s**2·cm**-2,  abrasion coefficient (Bosch and Ward, 2021)
-    
+    # xi = np.linspace(0, 1, 5)
+    # delta = cH + (0.5 + 3.5 * xi)*D
+    # Hf = delta[3]
+    Hf = cH + 3
+
     u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
     
     # In[10]:
@@ -147,7 +149,10 @@ for D in diam:
     if n <= 30:
         fig, axs = spl.trajectory_figures(l32, numScal, D, grain, Hf, x0, z0, loc_data)
         plt.show()
-
+    
+    if n <= 30:
+        fig, axs = spl.velocity_evol_figures(l32, numScal, D, grain, Hf, x0, z0, loc_data)
+        plt.show()
 
 #Process velocity array to average values over one scallop length
 VelocityAvg = np.zeros_like(diam)
@@ -188,6 +193,9 @@ np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv
 ####plot results, all plotting schemes available in scallopplotlib.py
 pars, stdevs, res, fig, axs = spl.average_velocities_plot(rho_quartz, rho_water, diam, l32, VelocityAvg)
 plt.show()
+
+# fig, axs = spl.erosion_rates_v_surface_slope(diam, NormErosionAvg, theta2, l32)
+# plt.show()
 
 # fig, axs, axins = spl.abrasion_and_dissolution_plot(x0)
 # plt.draw()
