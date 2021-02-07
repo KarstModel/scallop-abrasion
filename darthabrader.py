@@ -559,11 +559,11 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     g = -981
     m = np.pi * rho_s * D**3 / 6
     
-    #calculate bedload height as function of grain size (Wilson, 1987)
+    # calculate bedload height as function of grain size (Wilson, 1987)
     # xi = np.linspace(0, 1, 5)
     # delta = crest_height + (0.5 + 3.5 * xi)*D
-    # Hf = delta[1]
-    Hf = crest_height + 1
+    # Hf = delta[3]
+    Hf = crest_height + 3
 
     impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
     dt = dx / u_w0
@@ -585,7 +585,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         sediment_location[0, :] = [t, x_init, z_init, u_init, w_init]   #initial position and velocity ith particle 
         #print ('initial velocity(x,z) = (' + str(u_init) + ', ' + str(w_init) +')')
         
-        dt2=dt/10
+        dt2=dt/20
         while not OOB_FLAG and sediment_location[h, 2] >= 0:        #while that particle is in transport in the water
             t += dt2
             # get current location with respect to computational mesh at time = t - dt
@@ -615,7 +615,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             if np.abs(wrel) > eps2:                                       
                 Re_p = particle_reynolds_number(D, wrel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
-                az = (1 - (rho_w/rho_s)) * g + ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                az = np.sign(wrel)*(1 - (rho_w/rho_s)) * g + ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
                 #print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
             else:
                 az = 0
@@ -623,7 +623,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             if np.abs(urel) > eps2:
                 Re_p = particle_reynolds_number(D, urel, mu_kin)
                 drag_coef = dragcoeff(Re_p)
-                ax = ((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
+                ax = np.sign(urel)*((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
                 #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
             else:
                 ax = 0
