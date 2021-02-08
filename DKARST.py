@@ -46,14 +46,14 @@ plt.close('all')
 # =============================================================================
 outfolder='./outputs2'  # make sure this exists first
 l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 30  #number of grainsizes to simulate in diameter array
-numScal = 12  #number of scallops
+n = 50  #number of grainsizes to simulate in diameter array
+numScal = 8  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
 
 #grain_diam_max = 0.5 * l32 
-grain_diam_max = .25
+grain_diam_max = 2.5
 grain_diam_min = 0.025
 
 # =============================================================================
@@ -66,8 +66,6 @@ uScal = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
 
 x0, z0 = da.scallop_array(xScal, uScal, numScal, l32)   #initial scallop profile, dimensions in centimeters
 z0 = z0 - np.min(z0)
-cH = np.max(z0)   # crest height
-Hf = cH + 1
 dzdx = np.gradient(z0, x0)
 theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
 
@@ -117,8 +115,15 @@ for D in diam:
     rho_water = 1
     Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
     mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
-    B = 9.4075*10**-12  # s**2·cm**-2,  abrasion coefficient (Bosch and Ward, 2021)
+    B = 8.82*10**-14  # s**2·cm**-2,  abrasion coefficient (Bosch and Ward, 2021)
     
+    cH = np.max(z0)   # crest height
+    # xi = np.linspace(0, 1, 5)
+    # delta = cH + (0.5 + 3.5 * xi)*D
+    # Hf = delta[1]
+    
+    Hf = cH + 4
+
     u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
     
     # In[10]:
@@ -185,9 +190,9 @@ np.savetxt(join(outfolder,'ParticleReynolds'+str(l32)+flow_regime+time_stamp+'.c
 np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv'),NormErosionAvg,delimiter=",")
 
 ####plot results, all plotting schemes available in scallopplotlib.py
-pars, stdevs, res, fig, axs = spl.average_velocities_plot(rho_quartz, rho_water, diam, l32, VelocityAvg)
+pars, stdevs, res, fig, axs = spl.average_velocities_plot(rho_quartz, rho_water, diam, l32, VelocityAvg, Hf)
 plt.show()
 
-# fig, axs, axins = spl.abrasion_and_dissolution_plot(x0)
-# plt.draw()
-# plt.show()
+fig, axs, axins = spl.abrasion_and_dissolution_plot(x0)
+plt.draw()
+plt.show()
