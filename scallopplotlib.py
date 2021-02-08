@@ -27,7 +27,7 @@ def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type,
     axs.plot (scallop_x, scallop_z, 'grey')
     ld = np.array(loc_data, dtype=object)
 
-    for p in ld[(np.random.randint(len(loc_data)-1,size=20)).astype(int)]:
+    for p in ld[(np.random.randint(len(loc_data)-1,size=50)).astype(int)]:
         axs.plot(p[:,1], p[:,2], 2, 'k.')
         
     plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey', zorder=101)
