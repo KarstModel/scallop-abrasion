@@ -585,7 +585,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         sediment_location[0, :] = [t, x_init, z_init, u_init, w_init]   #initial position and velocity ith particle 
         #print ('initial velocity(x,z) = (' + str(u_init) + ', ' + str(w_init) +')')
         
-        dt2=dt/10
+        dt2=dt/4
         while not OOB_FLAG and sediment_location[h, 2] >= 0:        #while that particle is in transport in the water
             t += dt2
             # get current location with respect to computational mesh at time = t - dt
