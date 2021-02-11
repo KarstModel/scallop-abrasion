@@ -21,14 +21,14 @@ def __init__(self):
 
 def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type, fall_height, scallop_x, scallop_z, loc_data):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    axs.set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops/2 + scallop_length*4))
+    axs.set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
     axs.set_ylim(0, scallop_length*2)
     axs.set_aspect('equal')
     axs.plot (scallop_x, scallop_z, 'grey')
     ld = np.array(loc_data, dtype=object)
 
-    for p in ld[(np.random.randint(len(loc_data)-1,size=20)).astype(int)]:
-        axs.plot(p[:,1], p[:,2], 2, 'k.')
+    for p in ld[(np.random.randint(len(loc_data)-1,size=40)).astype(int)]:
+        axs.plot(p[:,1], p[:,2], 2)
         
     plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey', zorder=101)
     axs.set_ylabel('z (cm)')
@@ -39,7 +39,7 @@ def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type,
 
 ##plot average velocities of particles as a function of particle diameter. fit these data to Ferguson and Church curve allowing C_1 and C_2 parameters to vary.
 ##function returns pars, in which C_1 = pars[0] and C_2 = pars[1]; in addition to the associates standard deviation and residuals from fitting, and a scatter plot with fit curve
-def average_velocities_plot(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg):
+def average_velocities_plot(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg, fall_height):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     not_nan_idx = np.where(~np.isnan(VelocityAvg))
     diameter_array=diameter_array[not_nan_idx]
@@ -65,7 +65,7 @@ def average_velocities_plot(rho_sediment, rho_fluid, diameter_array, scallop_len
     plt.semilogx()
     axs.set_xlabel('particle grainsize (mm)')
     axs.set_ylabel('velocity (cm/s)') 
-    axs.set_title('Particle velocities over '+str(scallop_length)+' cm scallops')
+    axs.set_title('Particle velocities over '+str(scallop_length)+' cm scallops, falling from '+str(round(fall_height, 3))+' cm')
     
     return pars, stdevs, res, fig, axs
 
@@ -266,8 +266,8 @@ def abrasion_one_scallop_plot_mult_scallop_lengths():
 ####Total abrasion Over 5 cm Scallop with dissolution comparison
 def abrasion_and_dissolution_plot(x_array):    
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    Diam5 = genfromtxt('diam5.csv', delimiter=',')
-    EAI5 = genfromtxt('ErosionAtImpact5.csv', delimiter=',')
+    Diam5 = genfromtxt('./outputs2/diam5turbulent2021-02-08.csv', delimiter=',')
+    EAI5 = genfromtxt('./outputs2/ErosionAtImpact5turbulent2021-02-08.csv', delimiter=',')
     ES5 = np.zeros_like(Diam5)
     NEA5 = np.zeros_like(Diam5)
     NOI5 = np.zeros_like(Diam5)
@@ -316,6 +316,48 @@ def abrasion_and_dissolution_plot(x_array):
     mark_inset(axs, axins, loc1=2, loc2=1, fc="none", ec="0.5")
     
     return fig, axs, axins
+
+def abrasion_and_dissolution_plot_2(x_array):
+    cb_max = 0.02
+    cb_tiny = 4 * 10**-5
+    cb_old = 0.01
+    cb = np.linspace(cb_tiny, cb_max, 5)
+    
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    Diam5 = genfromtxt('./outputs2/diam5turbulent2021-02-09.csv', delimiter=',')
+    NEA5_old = genfromtxt('./outputs2/NormErosionAvg5turbulent2021-02-09.csv', delimiter=',')
+    for i in range(len(cb)):
+        NEA5_new = NEA5_old * cb[i]/cb_old
+        axs.scatter((Diam5*10), (NEA5_new), label = 'bedload concentration = '+str(round(cb[i], 5)))
+    
+    diss_min = 5.66    #minimum dissolution rate (mm/yr) (Grm et al., 2017)
+    diss_max = 12.175  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
+    x = np.linspace(0.9, 25)
+    plt.fill_between(x, diss_min, diss_max, alpha = 0.4, color = 'gray', label = 'dissolutional range')
+    
+    plt.semilogx()
+    plt.legend(loc = 'upper left')
+    axs.set_xlim(.9,30)
+    axs.set_title('Abrasion Rate Normalized by Number of Impacts on 5 cm Scallops')
+    axs.set_xlabel('particle grainsize (mm)')
+    axs.set_ylabel('abrasional erosion rate (mm/yr)')
+    axs.grid(True, which = 'both', axis = 'both')
+    
+    
+    return fig, axs
+
+def abrasion_by_slope(scallop_local_slope, ErosionAtImpact, diameter_array, scallop_length):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    for i in range(len(ErosionAtImpact)):
+        axs.scatter(scallop_local_slope, -ErosionAtImpact[i, :]*1000*36*24*365.25, label = 'particle diameter = '+str(round(diameter_array[i], 3)))
+    axs.set_title('Local slope of scallop profile versus surface abrasion on '+str(scallop_length)+' cm scallops, cb = 0.01')
+    plt.legend(loc = 'upper right')
+    axs.set_xlabel('dz/dx')
+    axs.set_ylabel('dz/dt (mm/yr)')    
+    return fig, axs
+    
+    
+
     
 def number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, x_array):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
