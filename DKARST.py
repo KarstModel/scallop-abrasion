@@ -44,16 +44,15 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-outfolder='./outputs2'  # make sure this exists first
+outfolder='./outputs'  # make sure this exists first
 l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 50  #number of grainsizes to simulate in diameter array
+n = 10  #number of grainsizes to simulate in diameter array
 numScal = 8  #number of scallops
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
 
-#grain_diam_max = 0.5 * l32 
-grain_diam_max = 2.5
+grain_diam_max = 0.5 * l32 
 grain_diam_min = 0.025
 
 # =============================================================================
@@ -193,6 +192,8 @@ np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv
 pars, stdevs, res, fig, axs = spl.average_velocities_plot(rho_quartz, rho_water, diam, l32, VelocityAvg, Hf)
 plt.show()
 
-fig, axs, axins = spl.abrasion_and_dissolution_plot(x0)
-plt.draw()
+fig, axs = spl.abrasion_and_dissolution_plot_2(x0)
+plt.show()
+
+fig, axs = spl.abrasion_by_slope(dzdx, ErosionAtImpact, diam, l32)
 plt.show()
