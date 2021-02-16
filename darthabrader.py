@@ -627,10 +627,11 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             else:
                 ax = 0
                 
-            pi_x = sediment_location[h, 1] + sediment_location[h, 3] * dt2 + 0.5 * ax * dt2**2 
-            pi_z = sediment_location[h, 2] + sediment_location[h, 4] * dt2 + 0.5 * az * dt2**2   
             pi_u = sediment_location[h, 3] + (ax * dt2)
             pi_w = sediment_location[h, 4] + (az * dt2)
+            pi_x = sediment_location[h, 1] + pi_u * dt2 + 0.5 * ax * dt2**2 
+            pi_z = sediment_location[h, 2] + pi_w * dt2 + 0.5 * az * dt2**2   
+
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
             
             # projected next 
