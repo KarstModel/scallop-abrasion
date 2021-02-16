@@ -37,35 +37,34 @@ def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type,
     return fig, axs
 
 
-##plot average velocities of particles as a function of particle diameter. fit these data to Ferguson and Church curve allowing C_1 and C_2 parameters to vary.
-##function returns pars, in which C_1 = pars[0] and C_2 = pars[1]; in addition to the associates standard deviation and residuals from fitting, and a scatter plot with fit curve
-def average_velocities_plot(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg, fall_height):
+def average_velocities_plot_fit_to_Dietrich(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg, fall_height):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    g = 981 # cm*s^-2
+    nu = 0.01307  # g*cm^-1*s^-1
     not_nan_idx = np.where(~np.isnan(VelocityAvg))
     diameter_array=diameter_array[not_nan_idx]
     VelocityAvg=VelocityAvg[not_nan_idx]
-    w_s = da.settling_velocity(rho_sediment, rho_fluid, diameter_array)
-    axs.scatter((diameter_array*10), VelocityAvg, label = 'simulated impact velocity')
-    axs.plot(diameter_array*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
+    D_star = ((rho_sediment-rho_fluid)*g*(diameter_array)**3)/(rho_fluid*nu)
+    W_star = (rho_fluid*VelocityAvg**3)/((rho_sediment-rho_fluid)*g*nu)
+    W_star_Dietrich = 1.71 * 10**-4 * D_star**2
+    axs.scatter(diameter_array, VelocityAvg, label = 'simulated impact velocity')
+    axs.plot(diameter_array, W_star_Dietrich, c = 'g', label = 'settling velocity (Dietrich, 1982)')
+
+    def settling_velocity(D_star, r, s):
+        return r * D_star**s
     
-    def settling_velocity(D, C_1, C_2):
-        R = 1.65
-        g = 981 # cm*s^-2
-        nu = 0.01307  # g*cm^-1*s^-1
-        return (R*g*D**2)/((C_1*nu)+np.sqrt(0.75*C_2*R*g*D**3))
-    
-    pars, cov = curve_fit(f=settling_velocity, xdata=diameter_array, ydata=VelocityAvg, p0=[24, 1.2], bounds=(-np.inf, np.inf))
+    pars, cov = curve_fit(f=settling_velocity, xdata=D_star, ydata=W_star, p0=[1.71 * 10**-4, 2], bounds=(-np.inf, np.inf))
     # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
     stdevs = np.sqrt(np.diag(cov))
     # Calculate the residuals
-    res = VelocityAvg - settling_velocity(diameter_array, *pars)
-    axs.plot(diameter_array*10, settling_velocity(diameter_array, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with C_1= '+str(round(pars[0], 2))+' and C_2= '+str(round(pars[1], 2)))
+    res = W_star - settling_velocity(D_star, *pars)
+    axs.plot(diameter_array, settling_velocity(D_star, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with r= '+str(round(pars[0], 2))+' and s= '+str(round(pars[1], 2)))
     
     plt.legend()
-    plt.semilogx()
-    axs.set_xlabel('particle grainsize (mm)')
-    axs.set_ylabel('velocity (cm/s)') 
-    axs.set_title('Particle velocities over '+str(scallop_length)+' cm scallops, falling from '+str(round(fall_height, 3))+' cm')
+    plt.semilogy()
+    axs.set_xlabel('dimensionless diameter')
+    axs.set_ylabel('dimensionless settling velocity') 
+    axs.set_title('Particle velocities over '+str(scallop_length)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
     
     return pars, stdevs, res, fig, axs
 
@@ -108,7 +107,7 @@ def average_velocities_mult_scallop_lengths(rho_sediment, rho_fluid):
     
     return fig, axs
 
-##combine velocity data sets and fit a curve of forn Ferguson and Church
+##combine velocity data sets and fit a curve of form Dietrich (1982)
 def velocity_curve_fitting(rho_sediment, rho_fluid):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     Diam1 = genfromtxt('./outputs/diam1turbulent.csv', delimiter=',')
@@ -142,18 +141,31 @@ def velocity_curve_fitting(rho_sediment, rho_fluid):
     velocities.append(vels5)
     velocities.append(vels10)
     
-    def settling_velocity(D, C_1, C_2):
-        R = 1.65
-        g = 981 # cm*s^-2
-        nu = 0.01307  # g*cm^-1*s^-1
-        return (R*g*D**2)/((C_1*nu)+np.sqrt(0.75*C_2*R*g*D**3))
+    g = -981 # cm*s^-2
+    nu = 0.01307  # g*cm^-1*s^-1
+    D_star_con = ((rho_sediment-rho_fluid)*g*(diameters)**3)/(rho_fluid*nu)
+    W_star_con = (rho_fluid*velocities**3)/((rho_sediment-rho_fluid)*g*nu)
+    W_star_Dietrich_con = 1.71 * 10**-4 * D_star_con**2
+    axs.scatter(D_star_con, W_star_con, label = 'simulated impact velocity')
+    axs.plot(D_star_con, W_star_Dietrich_con, c = 'g', label = 'settling velocity (Dietrich, 1982)')
+
     
+    def settling_velocity(D_star, r, s):
+        return r * D_star**s
+    
+    pars, cov = curve_fit(f=settling_velocity, xdata=D_star_con, ydata=W_star_con, p0=[1.71 * 10**-4, 2], bounds=(-np.inf, np.inf))
+    # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
+    stdevs = np.sqrt(np.diag(cov))
+    # Calculate the residuals
+    res = W_star_con - settling_velocity(D_star_con, *pars)
+    axs.plot(D_star_con, settling_velocity(D_star_con, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with r= '+str(round(pars[0], 2))+' and s= '+str(round(pars[1], 2)))
+
     pars, cov = curve_fit(f=settling_velocity, xdata=diameters, ydata=velocities, p0=[24, 1.2], bounds=(-np.inf, np.inf))
     # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
     stdevs = np.sqrt(np.diag(cov))
     # Calculate the residuals
-    res = velocities - settling_velocity(diameters, *pars)
-    axs.plot(diameters*10, settling_velocity(diameters, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with C_1= '+str(round(pars[0], 2))+' and C_2= '+str(round(pars[1], 2)))
+    res = velocities - settling_velocity(D_star_con, *pars)
+    axs.plot(D_star_con, settling_velocity(D_star_con, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with C_1= '+str(round(pars[0], 2))+' and C_2= '+str(round(pars[1], 2)))
     
     w_s = da.settling_velocity(rho_sediment, rho_fluid, diameters)
     axs.plot(diameters*10, -w_s, c = 'g', label = 'settling velocity (Ferguson and Church, 2004)')
@@ -166,6 +178,8 @@ def velocity_curve_fitting(rho_sediment, rho_fluid):
     axs.set_title('Particle velocities at impact upon scalloped floors')
     
     return pars, stdevs, res, fig, axs
+
+
 
 
 
@@ -348,12 +362,13 @@ def abrasion_and_dissolution_plot_2(x_array):
 
 def abrasion_by_slope(scallop_local_slope, ErosionAtImpact, diameter_array, scallop_length):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    cb = 0.01
     for i in range(len(ErosionAtImpact)):
-        axs.scatter(scallop_local_slope, -ErosionAtImpact[i, :]*1000*36*24*365.25, label = 'particle diameter = '+str(round(diameter_array[i], 3)))
-    axs.set_title('Local slope of scallop profile versus surface abrasion on '+str(scallop_length)+' cm scallops, cb = 0.01')
+        axs.scatter(scallop_local_slope, -ErosionAtImpact[i, :]*1000*36*24*365.25*cb/0.01, label = 'particle diameter = '+str(round(diameter_array[i], 3)))
+    axs.set_title('Local slope of scallop profile versus surface abrasion on '+str(scallop_length)+' cm scallops, cb = '+str(cb))
     plt.legend(loc = 'upper right')
-    axs.set_xlabel('dz/dx')
-    axs.set_ylabel('dz/dt (mm/yr)')    
+    axs.set_xlabel('scallop profile local slope (dz/dx)')
+    axs.set_ylabel('abrasional erosion rate (mm/yr)')    
     return fig, axs
     
     
@@ -399,7 +414,7 @@ def Gearys_test(NormErosionAvg):
     
     return Gearys_test
 
-def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profile, XAtImpact, ZAtImpact, uScal, scallop_length):   
+def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profile, XAtImpact, ZAtImpact, uScal, scallop_length, number_of_scallops):   
     
     GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
@@ -409,11 +424,11 @@ def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profi
     KEAvg = np.zeros_like(diameter_array)
     NumKE = np.zeros_like(diameter_array)
     
-    my_colors = cm.get_cmap('cool', 256)
+    my_colors = cm.get_cmap('Paired', 256)
     fig, axs = plt.subplots(nrows = len(diameter_array), ncols = 1, sharex=True, figsize = (11, 17))
     
     for j in range(len(diameter_array)):
-        axs[j].set_xlim(55, 65)
+        axs[j].set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
         axs[j].set_ylim(-0.5, 1.5)
         axs[j].set_aspect('equal')
         axs[j].plot(x_array, scallop_profile, 'grey')
@@ -436,10 +451,10 @@ def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profi
                         wspace=0.4, hspace=0.1)
     cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
     norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cool'), cax = cb_ax)
+    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='Paired'), cax = cb_ax)
     cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
     axs[-1].set_xlabel('x (cm)')
-    fig.title('Impact locations on '+str(scallop_length)+' cm scallops, colored by particle kinetic energy')
+    #fig.title('Impact locations on '+str(scallop_length)+' cm scallops, colored by particle kinetic energy')
     
     return fig, axs
     
