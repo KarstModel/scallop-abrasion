@@ -633,6 +633,11 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             pi_z = sediment_location[h, 2] + pi_w * dt2 + 0.5 * az * dt2**2   
 
             sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
+            #print('x',pi_x,'z',pi_z)
+            
+            if pi_u == 0 and pi_w == 0:
+                # grain is stuck
+                break
             
             # projected next 
             try:
