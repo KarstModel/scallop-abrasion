@@ -626,9 +626,12 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
             else:
                 ax = 0
-                
-            pi_u = sediment_location[h, 3] + (ax * dt2)
-            pi_w = sediment_location[h, 4] + (az * dt2)
+            
+            jitter_u = np.random.randn() * .1 #2 * eps2  # u-variablity due to subgrid scale turbulence
+            jitter_w = np.random.randn() * .1 #2 * eps2  # w-variablity due to subgrid scale turbulence
+            
+            pi_u = sediment_location[h, 3] + (ax * dt2) + jitter_u
+            pi_w = sediment_location[h, 4] + (az * dt2) + jitter_w
             pi_x = sediment_location[h, 1] + pi_u * dt2 + 0.5 * ax * dt2**2 
             pi_z = sediment_location[h, 2] + pi_w * dt2 + 0.5 * az * dt2**2   
 
