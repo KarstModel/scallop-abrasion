@@ -552,18 +552,12 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, theta2, mu_kin, crest_height, scallop_length):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, theta2, mu_kin, crest_height, scallop_length, number_of_particles):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
     g = -981
     m = np.pi * rho_s * D**3 / 6
-    
-    #calculate bedload height as function of grain size (Wilson, 1987)
-    # xi = np.linspace(0, 1, 5)
-    # delta = crest_height + (0.5 + 3.5 * xi)*D
-    # Hf = delta[1]
-    Hf = crest_height + 4
 
     impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
     dt = dx / u_w0
@@ -571,13 +565,21 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     # define machine epsilon threshold
     eps2=10*np.sqrt( u_w0*np.finfo(float).eps )
 
-    for i in range(len(x0)-1):    #begin one particle at rest at each x-position at its fall height (Hf)
+    for i in range(number_of_particles):    #begin one particle at horizontal velocity = u_w0, vertical velocity = 0, and a random x and z above the first scallop
         h = 0
         t = 0
         OOB_FLAG = False
         sediment_location = np.zeros(shape=(1, 5)) 
-        x_init = x0[i]
-        z_init = Hf
+        z_init = np.abs((crest_height+0.5*D)*np.random.randn())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
+        x_init = np.abs((scallop_length)*np.random.randn())  #add probability distribution later
+        if z_init < crest_height:
+            z_init = crest_height + 0.05
+        elif z_init >= (np.shape(w_water)[0])*0.05:
+            z_init = (np.shape(w_water)[0])*0.05 - 0.05
+        if x_init < 0.05  or x_init >= (np.shape(u_water)[1])*0.05:
+            x_init = 0.05
+        print (x_init)
+        print(z_init)       
         z_idx = np.rint(z_init/0.05)
         x_idx = np.rint(x_init/0.05)
         u_init = u_water[int(z_idx), int(x_idx)]
