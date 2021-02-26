@@ -19,7 +19,7 @@ from matplotlib import cm
 def __init__(self):
     pass
 
-def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type, fall_height, scallop_x, scallop_z, loc_data):
+def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type, scallop_x, scallop_z, loc_data):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
     axs.set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
     axs.set_ylim(0, scallop_length*2)
@@ -33,11 +33,11 @@ def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type,
     plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey', zorder=101)
     axs.set_ylabel('z (cm)')
     axs.set_xlabel('x (cm)')
-    axs.set_title('Trajectories of randomly selected ' + str(round(diameter*10, 3)) + ' mm '+ grain_type +' on ' +str(scallop_length)+ ' cm floor scallops, fall height = ' + str(round(fall_height, 3)) + ' cm.')
+    axs.set_title('Trajectories of randomly selected ' + str(round(diameter*10, 3)) + ' mm '+ grain_type +' on ' +str(scallop_length)+ ' cm floor scallops.')
     return fig, axs
 
 
-def average_velocities_plot_fit_to_Dietrich(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg, fall_height):
+def average_velocities_plot_fit_to_Dietrich(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     g = 981 # cm*s^-2
     nu = 0.01307  # g*cm^-1*s^-1
