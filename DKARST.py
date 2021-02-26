@@ -45,9 +45,10 @@ plt.close('all')
 # ### user input: 
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
-l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 6  #number of grainsizes to simulate in diameter array
+l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+n = 4  #number of grainsizes to simulate in diameter array
 numScal = 8  #number of scallops
+numPrtkl = 1000 # number of particles to release for each grainsize
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
@@ -119,17 +120,11 @@ for D in diam:
     cb = 0.01    #bedload sediment concentration
     
     cH = np.max(z0)   # crest height
-    # xi = np.linspace(0, 1, 5)
-    # delta = cH + (0.5 + 3.5 * xi)*D
-    # Hf = delta[1]
-    
-    Hf = cH + 4
-
     u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
     
     # In[10]:
     
-    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32, numPrtkl)
     
     ###sort output data into arrays
     NumberImpacts = np.count_nonzero(impact_data[:, 6])
@@ -150,7 +145,7 @@ for D in diam:
     i += 1
     
     if n <= 30:
-        fig, axs = spl.trajectory_figures(l32, numScal, D, grain, Hf, x0, z0, loc_data)
+        fig, axs = spl.trajectory_figures(l32, numScal, D, grain, x0, z0, loc_data)
         plt.show()
 
 
@@ -191,7 +186,7 @@ for r in range(len(diam)):
 # np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv'),NormErosionAvg,delimiter=",")
 
 ####plot results; all plotting schemes available in scallopplotlib.py
-pars, stdevs, res, fig, axs = spl.average_velocities_plot_fit_to_Dietrich(rho_quartz, rho_water, diam, l32, VelocityAvg, Hf)
+pars, stdevs, res, fig, axs = spl.average_velocities_plot_fit_to_Dietrich(rho_quartz, rho_water, diam, l32, VelocityAvg)
 plt.show()
 
 # # fig, axs = spl.abrasion_and_dissolution_plot_2(x0)
