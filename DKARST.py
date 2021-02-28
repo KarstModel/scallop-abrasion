@@ -46,9 +46,9 @@ plt.close('all')
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
 l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 4  #number of grainsizes to simulate in diameter array
+n = 20  #number of grainsizes to simulate in diameter array
 numScal = 8  #number of scallops
-numPrtkl = 700 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
+numPrtkl = 1000 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
@@ -90,11 +90,11 @@ elif flow_regime == 'turbulent':
 # definitions and parameters
 
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
-EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
-XAtImpact = np.empty(shape = (len(diam), len(x0)))
-ZAtImpact = np.empty(shape = (len(diam), len(x0)))
-ErosionAtImpact = np.empty(shape = (len(diam), len(x0)))
-VelocityAtImpact = np.empty(shape = (len(diam), len(x0)))
+EnergyAtImpact = np.empty(shape = (n, numPrtkl))
+XAtImpact = np.empty(shape = (n, numPrtkl))
+ZAtImpact = np.empty(shape = (n, numPrtkl))
+ErosionAtImpact = np.empty(shape = (n, numPrtkl))
+VelocityAtImpact = np.empty(shape = (n, numPrtkl))
 ParticleDrag = np.empty_like(diam)
 ParticleReynolds = np.empty_like(diam)
 ImpactEnergyAvg = np.empty_like(diam)
@@ -186,14 +186,14 @@ for r in range(len(diam)):
 # np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv'),NormErosionAvg,delimiter=",")
 
 ####plot results; all plotting schemes available in scallopplotlib.py
-pars, stdevs, res, fig, axs = spl.average_velocities_plot_fit_to_Dietrich(rho_quartz, rho_water, diam, l32, VelocityAvg)
+pars, stdevs, res, fig, axs = spl.average_velocities_plot_fit_to_Dietrich(rho_quartz, rho_water, diam, l32, VelocityAvg, numPrtkl)
 plt.show()
 
 # # fig, axs = spl.abrasion_and_dissolution_plot_2(x0)
 # # plt.show()
 
-fig, axs = spl.abrasion_by_slope(dzdx, ErosionAtImpact, diam, l32)
-plt.show()
+# fig, axs = spl.abrasion_by_slope(dzdx, ErosionAtImpact, diam, l32)
+# plt.show()
 
 fig, axs = spl.impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
 plt.show()
