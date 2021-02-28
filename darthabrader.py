@@ -559,7 +559,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     g = -981
     m = np.pi * rho_s * D**3 / 6
 
-    impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
+    impact_data = np.zeros(shape=(number_of_particles, 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
     dt = dx / u_w0
     location_data = []
     # define machine epsilon threshold
@@ -574,12 +574,12 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         x_init = np.abs((scallop_length)*np.random.randn())  #add probability distribution later
         if z_init < crest_height:
             z_init = crest_height + 0.05
-        elif z_init >= (np.shape(w_water)[0])*0.05:
+        elif z_init >= ((np.shape(w_water)[0])*0.05-0.05):
             z_init = (np.shape(w_water)[0])*0.05 - 0.05
-        if x_init < 0.05  or x_init >= (np.shape(u_water)[1])*0.05:
+        if x_init < 0.05  or x_init >= ((np.shape(u_water)[1])*0.05-0.05):
             x_init = 0.05
-        print (x_init)
-        print(z_init)       
+        #print (x_init)
+        #print(z_init)       
         z_idx = np.rint(z_init/0.05)
         x_idx = np.rint(x_init/0.05)
         u_init = u_water[int(z_idx), int(x_idx)]
@@ -668,8 +668,9 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         else:
             #print('div/0 or other error in theta1')
             theta1 = 0
+        
             
-        alpha = np.pi - theta1 - theta2[i]          # angle of impact
+        alpha = np.pi - theta1 - theta2[int(x_idx)]          # angle of impact
             
         impact_data[i, 5] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
         if impact_data[i, 5] <= 0:          
