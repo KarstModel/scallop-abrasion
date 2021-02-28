@@ -37,7 +37,7 @@ def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type,
     return fig, axs
 
 
-def average_velocities_plot_fit_to_Dietrich(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg):
+def average_velocities_plot_fit_to_Dietrich(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg, numPrtkl):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     g = 981 # cm*s^-2
     nu = 0.01307  # g*cm^-1*s^-1
@@ -64,7 +64,7 @@ def average_velocities_plot_fit_to_Dietrich(rho_sediment, rho_fluid, diameter_ar
     plt.semilogy()
     axs.set_xlabel('dimensionless diameter')
     axs.set_ylabel('dimensionless settling velocity') 
-    axs.set_title('Particle velocities over '+str(scallop_length)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
+    axs.set_title('Particle velocities over '+str(scallop_length)+' cm scallops, with ' +str(numPrtkl)+ ' particles')
     
     return pars, stdevs, res, fig, axs
 
