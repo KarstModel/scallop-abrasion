@@ -124,7 +124,7 @@ for D in diam:
     
     # In[10]:
     
-    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32, numPrtkl)
+    impact_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32, numPrtkl)
     
     ###sort output data into arrays
     NumberImpacts = np.count_nonzero(impact_data[:, 6])
@@ -144,9 +144,9 @@ for D in diam:
     print('diam = ' + str(diam[i]) + ' cm')
     i += 1
     
-    if n <= 30:
-        fig, axs = spl.trajectory_figures(l32, numScal, D, grain, x0, z0, loc_data)
-        plt.show()
+    # if n <= 30:
+    #     fig, axs = spl.trajectory_figures(l32, numScal, D, grain, x0, z0, loc_data)
+    #     plt.show()
 
 
 #Process velocity array to average values over one scallop length
