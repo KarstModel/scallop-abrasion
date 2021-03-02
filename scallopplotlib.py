@@ -428,7 +428,7 @@ def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profi
     fig, axs = plt.subplots(nrows = len(diameter_array), ncols = 1, sharex=True, figsize = (11, 17))
     
     for j in range(len(diameter_array)):
-        axs[j].set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
+        #axs[j].set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
         axs[j].set_ylim(-0.5, 1.5)
         axs[j].set_aspect('equal')
         axs[j].plot(x_array, scallop_profile, 'grey')
