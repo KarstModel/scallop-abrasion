@@ -48,7 +48,7 @@ outfolder='./outputs'  # make sure this exists first
 l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 4  #number of grainsizes to simulate in diameter array
 numScal = 8  #number of scallops
-numPrtkl = 100 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
+numPrtkl = 10 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
@@ -56,6 +56,8 @@ if flow_regime == 'laminar':
 #grain_diam_max = 0.5 * l32 
 grain_diam_max = 2.5
 grain_diam_min = .1
+
+max_time = 0.005  #seconds
 
 # =============================================================================
 
@@ -124,7 +126,7 @@ for D in diam:
     
     # In[10]:
     
-    impact_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32, numPrtkl)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32, numPrtkl, max_time)
     
     ###sort output data into arrays
     NumberImpacts = np.count_nonzero(impact_data[:, 6])
@@ -144,9 +146,9 @@ for D in diam:
     print('diam = ' + str(diam[i]) + ' cm')
     i += 1
     
-    # if n <= 30:
-    #     fig, axs = spl.trajectory_figures(l32, numScal, D, grain, x0, z0, loc_data)
-    #     plt.show()
+    if n <= 30:
+        fig, axs = spl.trajectory_figures(l32, numScal, D, grain, x0, z0, loc_data)
+        plt.show()
 
 
 #Process velocity array to average values over one scallop length
@@ -186,14 +188,14 @@ for r in range(len(diam)):
 # np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv'),NormErosionAvg,delimiter=",")
 
 ####plot results; all plotting schemes available in scallopplotlib.py
-pars, stdevs, res, fig, axs = spl.average_velocities_plot_fit_to_Dietrich(rho_quartz, rho_water, diam, l32, VelocityAvg, numPrtkl)
-plt.show()
-
-# # fig, axs = spl.abrasion_and_dissolution_plot_2(x0)
-# # plt.show()
-
-# fig, axs = spl.abrasion_by_slope(dzdx, ErosionAtImpact, diam, l32)
+# pars, stdevs, res, fig, axs = spl.average_velocities_plot_fit_to_Dietrich(rho_quartz, rho_water, diam, l32, VelocityAvg, numPrtkl)
 # plt.show()
 
-fig, axs = spl.impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
-plt.show()
+# # # fig, axs = spl.abrasion_and_dissolution_plot_2(x0)
+# # # plt.show()
+
+# # fig, axs = spl.abrasion_by_slope(dzdx, ErosionAtImpact, diam, l32)
+# # plt.show()
+
+# fig, axs = spl.impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
+# plt.show()
