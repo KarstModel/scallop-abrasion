@@ -37,17 +37,17 @@ def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type,
     return fig, axs
 
 
-def average_velocities_plot_fit_to_Dietrich(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAvg, numPrtkl):
+def average_velocities_plot_fit_to_Dietrich(rho_sediment, rho_fluid, diameter_array, scallop_length, VelocityAtImpact, numPrtkl):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     g = 981 # cm*s^-2
     nu = 0.01307  # g*cm^-1*s^-1
-    not_nan_idx = np.where(~np.isnan(VelocityAvg))
-    diameter_array=diameter_array[not_nan_idx]
-    VelocityAvg=VelocityAvg[not_nan_idx]
+    AvgVelocity = np.zeros_like(diameter_array)
+    for j in range(len(AvgVelocity)):
+        AvgVelocity[j] = np.average(VelocityAtImpact[j,(np.logical_not(np.isnan(VelocityAtImpact[j, :])))][VelocityAtImpact[j,(np.logical_not(np.isnan(VelocityAtImpact[j, :])))]<0])
     D_star = ((rho_sediment-rho_fluid)*g*(diameter_array)**3)/(rho_fluid*nu)
-    W_star = (rho_fluid*VelocityAvg**3)/((rho_sediment-rho_fluid)*g*nu)
+    W_star = -(rho_fluid*AvgVelocity**3)/((rho_sediment-rho_fluid)*g*nu)
     W_star_Dietrich = 1.71 * 10**-4 * D_star**2
-    axs.scatter(diameter_array, VelocityAvg, label = 'simulated impact velocity')
+    axs.scatter(diameter_array, W_star, label = 'simulated impact velocity')
     axs.plot(diameter_array, W_star_Dietrich, c = 'g', label = 'settling velocity (Dietrich, 1982)')
 
     def settling_velocity(D_star, r, s):
@@ -278,10 +278,12 @@ def abrasion_one_scallop_plot_mult_scallop_lengths():
     return fig, axs
     
 ####Total abrasion Over 5 cm Scallop with dissolution comparison
-def abrasion_and_dissolution_plot(x_array):    
+def abrasion_and_dissolution_plot(x_array, diam, ErosionAtImpact): 
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    Diam5 = genfromtxt('./outputs2/diam5turbulent2021-02-08.csv', delimiter=',')
-    EAI5 = genfromtxt('./outputs2/ErosionAtImpact5turbulent2021-02-08.csv', delimiter=',')
+    # Diam5 = genfromtxt('./outputs2/diam5turbulent2021-02-08.csv', delimiter=',')
+    # EAI5 = genfromtxt('./outputs2/ErosionAtImpact5turbulent2021-02-08.csv', delimiter=',')
+    Diam5 = diam
+    EAI5 = ErosionAtImpact
     ES5 = np.zeros_like(Diam5)
     NEA5 = np.zeros_like(Diam5)
     NOI5 = np.zeros_like(Diam5)
@@ -331,15 +333,17 @@ def abrasion_and_dissolution_plot(x_array):
     
     return fig, axs, axins
 
-def abrasion_and_dissolution_plot_2(x_array):
+def abrasion_and_dissolution_plot_2(x_array, diam, NormErosionAvg):
     cb_max = 0.02
     cb_tiny = 4 * 10**-5
     cb_old = 0.01
     cb = np.linspace(cb_tiny, cb_max, 5)
     
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    Diam5 = genfromtxt('./outputs2/diam5turbulent2021-02-09.csv', delimiter=',')
-    NEA5_old = genfromtxt('./outputs2/NormErosionAvg5turbulent2021-02-09.csv', delimiter=',')
+    #Diam5 = genfromtxt('./outputs2/diam5turbulent2021-02-09.csv', delimiter=',')
+    Diam5 = diam
+    #NEA5_old = genfromtxt('./outputs2/NormErosionAvg5turbulent2021-02-09.csv', delimiter=',')
+    NEA5_old = NormErosionAvg
     for i in range(len(cb)):
         NEA5_new = NEA5_old * cb[i]/cb_old
         axs.scatter((Diam5*10), (NEA5_new), label = 'bedload concentration = '+str(round(cb[i], 5)))
