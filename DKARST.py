@@ -48,7 +48,7 @@ outfolder='./outputs'  # make sure this exists first
 l32 = 5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 4  #number of grainsizes to simulate in diameter array
 numScal = 8  #number of scallops
-numPrtkl = 10 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
+numPrtkl = 100 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
@@ -57,7 +57,7 @@ if flow_regime == 'laminar':
 grain_diam_max = 2.5
 grain_diam_min = .1
 
-max_time = 2  #seconds
+max_time = 10  #seconds
 
 # =============================================================================
 
@@ -193,5 +193,5 @@ for r in range(len(diam)):
 # # fig, axs = spl.abrasion_by_slope(dzdx, ErosionAtImpact, diam, l32)
 # # plt.show()
 
-# fig, axs = spl.impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
-# plt.show()
+fig, axs = spl.seperate_impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
+plt.show()
