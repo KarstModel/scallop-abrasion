@@ -596,25 +596,67 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 t += dt2
                 time_step +=1
                 print('time step in rebound loop, ', time_step)
+                
                 CoR = 0.8  #conservative coefficient of restitution
                 if location_data[i,time_step-1,3] != 0:
                     theta1 = np.arctan(location_data[i,time_step-1, 4]/location_data[i,time_step-1, 3])
                 else:
                     theta1 = np.pi / 2
                 x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))
-                beta = theta1 -  2*theta2[int(x_idx)]
-                x_rebound = location_data[i,time_step-1, 1]
-                z_rebound = location_data[i,time_step-1, 2]
+                beta = -theta1 +  2*theta2[int(x_idx)]
                 if np.sin(theta1) != 0:
                     convert_w = np.sin(beta) / np.sin(theta1)
-                    w_rebound = (CoR * location_data[i,time_step-1, 4] * convert_w)
+                    wp = (CoR * location_data[i,time_step-1, 4] * convert_w)
                 else:
-                    w_rebound = (CoR * location_data[i,time_step-1, 4] * np.sin(beta))
+                    wp = (CoR * location_data[i,time_step-1, 4] * np.sin(beta))
                 if np.cos(theta1) != 0:
                     convert_u = np.cos(beta) / np.cos(theta1)
-                    u_rebound =(CoR * location_data[i,time_step-1, 3] * convert_u)
+                    up =(CoR * location_data[i,time_step-1, 3] * convert_u)
                 else:
-                    u_rebound = (CoR * location_data[i,time_step-1, 3] * np.cos(beta))
+                    up = (CoR * location_data[i,time_step-1, 3] * np.cos(beta))
+
+                x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))                
+                z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
+                if z_idx < 0:
+                    z_idx = 0
+                elif z_idx >= np.shape(w_water)[0]:
+                    OOB_FLAG = True
+                    #print('out of bounds vertically!')
+                    break
+                if x_idx < 0  or x_idx >= np.shape(u_water)[1]:
+                    OOB_FLAG = True
+                    #print('out of bounds horizontally!')
+                    break
+       
+                ww = w_water[int(z_idx), int(x_idx)]
+                wrel = ww - wp
+                uw = u_water[int(z_idx), int(x_idx)]     
+                urel = uw - up
+                
+                # these blocks make sure the relative velocity is sufficiently above 
+                # machine precision that squaring it in the next step doesn't result in underflow
+                if np.abs(wrel) > eps2:                                       
+                    Re_p = particle_reynolds_number(D, wrel, mu_kin)
+                    drag_coef = dragcoeff(Re_p)
+                    az = (1 - (rho_w/rho_s)) * g + np.sign(wrel) * ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                    #print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
+                else:
+                    az = 0
+                              
+                if np.abs(urel) > eps2:
+                    Re_p = particle_reynolds_number(D, urel, mu_kin)
+                    drag_coef = dragcoeff(Re_p)
+                    ax = np.sign(urel) * ((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
+                    #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
+                else:
+                    ax = 0
+                    
+                u_rebound = location_data[i,time_step-1, 3] + (ax * dt2)
+                w_rebound = location_data[i,time_step-1, 4] + (az * dt2)
+                x_rebound = location_data[i,time_step-1, 1] + u_rebound * dt2 + 0.5 * ax * dt2**2 
+                z_rebound = location_data[i,time_step-1, 2] + w_rebound * dt2 + 0.5 * az * dt2**2   
+
+
                 location_data[i, time_step, :] = [t, x_rebound, z_rebound, u_rebound, w_rebound]
                 BOUNCED = False
                 
