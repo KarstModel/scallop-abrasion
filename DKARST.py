@@ -133,8 +133,6 @@ for D in diam:
     TotalImpactEnergy[i] = np.sum(impact_data[300:401, 6])
     if (NumberImpacts != 0):
         ImpactEnergyAvg[i] = TotalImpactEnergy[i]/NumberImpacts 
-    ParticleDrag[i] = np.average(impact_data[:, 8])
-    ParticleReynolds[i] = np.average(impact_data[:, 7])
     EnergyAtImpact[i, :] = impact_data[:, 6]
     XAtImpact[i, :] = impact_data[:, 1]
     ZAtImpact[i, :] = impact_data[:, 2]
@@ -183,8 +181,6 @@ for r in range(len(diam)):
 # np.savetxt(join(outfolder,'MaxVelocities'+str(l32)+flow_regime+time_stamp+'.csv'),MaxVelocities,delimiter=",")
 # np.savetxt(join(outfolder,'diam'+str(l32)+flow_regime+time_stamp+'.csv'),diam,delimiter=",")
 # np.savetxt(join(outfolder,'TotalImpactEnergy'+str(l32)+flow_regime+time_stamp+'.csv'),TotalImpactEnergy,delimiter=",")
-# np.savetxt(join(outfolder,'ParticleDrag'+str(l32)+flow_regime+time_stamp+'.csv'),ParticleDrag,delimiter=",")
-# np.savetxt(join(outfolder,'ParticleReynolds'+str(l32)+flow_regime+time_stamp+'.csv'),ParticleReynolds,delimiter=",")
 # np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv'),NormErosionAvg,delimiter=",")
 
 ####plot results; all plotting schemes available in scallopplotlib.py
