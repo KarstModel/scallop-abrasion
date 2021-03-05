@@ -57,7 +57,7 @@ if flow_regime == 'laminar':
 grain_diam_max = 2.5
 grain_diam_min = .1
 
-max_time = 0.005  #seconds
+max_time = 2  #seconds
 
 # =============================================================================
 
