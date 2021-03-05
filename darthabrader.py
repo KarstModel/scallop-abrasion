@@ -559,7 +559,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     g = -981
     m = np.pi * rho_s * D**3 / 6
 
-    impact_data = np.zeros(shape=(number_of_particles, 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
+    impact_data = np.zeros(shape=(number_of_particles, 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
     dt2=dt/4
     #location_data = []
@@ -573,6 +573,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         t = 0
         OOB_FLAG = False
         BOUNCED = False
+        MOVING = True
         z_init = np.abs((crest_height+0.5*D)*np.random.randn())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
         x_init = np.abs((scallop_length)*np.random.randn())  #add probability distribution later
         if z_init < crest_height:
@@ -589,9 +590,9 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         print ('initial position (x,z) (cm)= ('+ str(x_init) + ', ' + str(z_init) +')')
         print ('initial velocity (u,w) (cm/s)= (' + str(u_init) + ', ' + str(w_init) +')')
         
-        while not OOB_FLAG and location_data[i, time_step, 2] >= 0 and time_step < location_length:        #while that particle is in transport in the water
+        while not OOB_FLAG and MOVING and location_data[i, time_step, 2] >= 0 and time_step < location_length:        #while that particle is in transport in the water
             
-            while BOUNCED and time_step < location_length:
+            while MOVING and BOUNCED and time_step < location_length:
                 t += dt2
                 time_step +=1
                 print('time step in rebound loop, ', time_step)
@@ -619,7 +620,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
             t += dt2
             time_step += 1
-            # get current location with respect to computational mesh at time = t - dt
+            print ('time step in main while loop, ', time_step)
             x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))                
             z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
             if z_idx < 0:
@@ -667,6 +668,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             #print('x',pi_x,'z',pi_z)
             
             if pi_u == 0 and pi_w == 0:
+                MOVING = False
                 # grain is stuck
                 break
             
@@ -687,8 +689,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
                 impact_data[i, :5] = location_data[i,time_step, :]
                 BOUNCED = True
-                #print('impact!')
-                break
+                print('impact!')
+                
             
             #time_step+=1
             #print('h',h)
