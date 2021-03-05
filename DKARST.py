@@ -193,5 +193,8 @@ for r in range(len(diam)):
 # # fig, axs = spl.abrasion_by_slope(dzdx, ErosionAtImpact, diam, l32)
 # # plt.show()
 
+fig, axs = spl.impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
+plt.show()
+
 fig, axs = spl.seperate_impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
 plt.show()
