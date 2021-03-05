@@ -21,7 +21,7 @@ def __init__(self):
 
 def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type, scallop_x, scallop_z, loc_data):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
-    axs.set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
+    #axs.set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
     axs.set_ylim(0, scallop_length*2)
     axs.set_aspect('equal')
     axs.plot (scallop_x, scallop_z, 'grey')
@@ -476,20 +476,20 @@ def seperate_impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scal
     
     for j in range(len(diameter_array)):
         fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-        axs.set_xlim(scallop_length*number_of_scallops*5/8, (scallop_length*number_of_scallops*7/8))
+        #axs.set_xlim(scallop_length*number_of_scallops*5/8, (scallop_length*number_of_scallops*7/8))
         axs.set_ylim(-0.5, 1.5)
         axs.set_aspect('equal')
         axs.plot(x_array, scallop_profile, 'grey')
-        # EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
+        EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
         findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
         axs.scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
  
-        # deletion1 = np.linspace(0, scallop_length*number_of_scallops*5/8, 1 )
-        # deletion2 = np.linspace(scallop_length*number_of_scallops*7/8, scallop_length*number_of_scallops, 1)
-        # for k in range(len(deletion1)):
-        #     KEXAtImpact = np.delete(XAtImpact, int(deletion1[k])  ,axis = 1 )
-        # for l in range(len(deletion2)):
-        #     KEXAtImpact = np.delete(XAtImpact, int(deletion2[l]), axis = 1)
+        deletion1 = np.linspace(0, scallop_length*number_of_scallops*5/8, 1 )
+        deletion2 = np.linspace(scallop_length*number_of_scallops*7/8, scallop_length*number_of_scallops, 1)
+        for k in range(len(deletion1)):
+            KEXAtImpact = np.delete(XAtImpact, int(deletion1[k])  ,axis = 1 )
+        for l in range(len(deletion2)):
+            KEXAtImpact = np.delete(XAtImpact, int(deletion2[l]), axis = 1)
  
     
         KESum[j] = np.sum(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
@@ -500,10 +500,10 @@ def seperate_impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scal
         else:
             KEAvg[j] = 0
     
-        # MaxKE[j] = np.max(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
+        MaxKE[j] = np.max(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
         
         
-        # Max_x[j] = KEXAtImpact[j, np.where(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0]==np.max(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0][np.where(~np.isnan(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0]))]))[0][0]]
+        Max_x[j] = KEXAtImpact[j, np.where(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0]==np.max(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0][np.where(~np.isnan(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0]))]))[0][0]]
         axs.set_ylabel('z (cm)') 
         axs.set_title('D= ' +str(round(diameter_array[j]*10, 2)) + ' mm, avg.KE= ' + str(round(KEAvg[j],2)) + ' ergs, MaxKE= ' +str(round(MaxKE[j],2))+' ergs at x= ' +str(round(Max_x[j],2)))
         axs.set_xlabel('x (cm)')
