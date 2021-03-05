@@ -595,7 +595,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             while MOVING and BOUNCED and time_step < location_length:
                 t += dt2
                 time_step +=1
-                print('time step in rebound loop, ', time_step)
+                #print('time step in rebound loop, ', time_step)
                 
                 CoR = 0.9  #conservative coefficient of restitution, calculate reflected velocity components
                 if location_data[i,time_step-1,3] != 0:
@@ -662,7 +662,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
             t += dt2
             time_step += 1
-            print ('time step in main while loop, ', time_step)
+           # print ('time step in main while loop, ', time_step)
             x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))                
             z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
             if z_idx < 0:
@@ -731,11 +731,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
                 impact_data[i, :5] = location_data[i,time_step, :]
                 BOUNCED = True
-                print('impact!')
+               # print('impact!')
                 
-            
-            #time_step+=1
-            #print('h',h)
     
         if impact_data[i,3] != 0:
             theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
@@ -743,7 +740,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             #print('div/0 or other error in theta1')
             theta1 = 0
             
-        alpha = np.pi - theta1 - theta2[i]          # angle of impact
+        alpha = theta1 - theta2[i]          # angle of impact
             
         impact_data[i, 5] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
         if impact_data[i, 5] <= 0:          
