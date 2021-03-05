@@ -587,8 +587,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         u_init = u_water[int(z_idx), int(x_idx)]
         w_init = w_water[int(z_idx), int(x_idx)]
         location_data[i, time_step, :] = [t, x_init, z_init, u_init, w_init]
-        print ('initial position (x,z) (cm)= ('+ str(x_init) + ', ' + str(z_init) +')')
-        print ('initial velocity (u,w) (cm/s)= (' + str(u_init) + ', ' + str(w_init) +')')
+        #print ('initial position (x,z) (cm)= ('+ str(x_init) + ', ' + str(z_init) +')')
+        #print ('initial velocity (u,w) (cm/s)= (' + str(u_init) + ', ' + str(w_init) +')')
         
         while not OOB_FLAG and MOVING and location_data[i, time_step, 2] >= 0 and time_step < location_length:        #while that particle is in transport in the water
             
@@ -740,7 +740,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             #print('div/0 or other error in theta1')
             theta1 = 0
             
-        alpha = theta1 - theta2[i]          # angle of impact
+        alpha = theta1 - theta2[int(x_idx)]          # angle of impact
             
         impact_data[i, 5] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
         if impact_data[i, 5] <= 0:          
