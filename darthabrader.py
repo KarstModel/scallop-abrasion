@@ -597,7 +597,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 time_step +=1
                 print('time step in rebound loop, ', time_step)
                 
-                CoR = 0.8  #conservative coefficient of restitution
+                CoR = 0.9  #conservative coefficient of restitution, calculate reflected velocity components
                 if location_data[i,time_step-1,3] != 0:
                     theta1 = np.arctan(location_data[i,time_step-1, 4]/location_data[i,time_step-1, 3])
                 else:
@@ -615,7 +615,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 else:
                     up = (CoR * location_data[i,time_step-1, 3] * np.cos(beta))
 
-                x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))                
                 z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
                 if z_idx < 0:
                     z_idx = 0
@@ -650,12 +649,13 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                     #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
                 else:
                     ax = 0
-                    
+                
+                #use reflected velocity components to advance one time step in rebound direction, then return to flow control in outer while loop
                 u_rebound = up + (ax * dt2)
                 w_rebound = wp + (az * dt2)
                 x_rebound = location_data[i,time_step-1, 1] + u_rebound * dt2 + 0.5 * ax * dt2**2 
                 z_rebound = location_data[i,time_step-1, 2] + w_rebound * dt2 + 0.5 * az * dt2**2   
-                print('x_r',x_rebound,'z_r',z_rebound,'u_r',u_rebound,'w_r',w_rebound)
+                #print('x_r',x_rebound,'z_r',z_rebound,'u_r',u_rebound,'w_r',w_rebound)
 
                 location_data[i, time_step, :] = [t, x_rebound, z_rebound, u_rebound, w_rebound]
                 BOUNCED = False
@@ -707,7 +707,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             pi_z = location_data[i,time_step-1, 2] + pi_w * dt2 + 0.5 * az * dt2**2   
 
             location_data[i,time_step, :] = [t, pi_x, pi_z, pi_u, pi_w]
-            print('x',pi_x,'z',pi_z,'u',pi_u,'w',pi_w)
+            #print('x',pi_x,'z',pi_z,'u',pi_u,'w',pi_w)
             
             if pi_u == 0 and pi_w == 0:
                 MOVING = False
