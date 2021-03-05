@@ -435,17 +435,18 @@ def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profi
         EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
         findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
         axs[j].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
+        KEAvg = np.average(np.logical_not(np.isnan(EnergyAtImpact[j, :])))
         
-        KESum[j] = np.sum(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
-        NumPos = len(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
-        NumKE[j] = NumPos
-        if NumPos > 0:
-            KEAvg[j] = KESum[j]/NumPos
-        else:
-            KEAvg[j] = 0
+        # KESum[j] = np.sum(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
+        # NumPos = len(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
+        # NumKE[j] = NumPos
+        # if NumPos > 0:
+        #     KEAvg[j] = KESum[j]/NumPos
+        # else:
+        #     KEAvg[j] = 0
     
         axs[j].set_ylabel('z (cm)') 
-        axs[j].set_title('D = ' +str(round(diameter_array[j]*10, 2)) + ' mm                     avg.KE = ' + str(round(KEAvg[j],2)) + ' ergs')
+        axs[j].set_title('D = ' +str(round(diameter_array[j]*10, 2)) + ' mm                     avg.KE = ' + str(round(KEAvg, 2)) + ' ergs')
     #legend
     fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
                         wspace=0.4, hspace=0.1)
@@ -464,13 +465,6 @@ def seperate_impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scal
     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
     ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
     ColorMax = np.ceil(np.max(ColorNumbers))
-    KESum = np.zeros_like(diameter_array)
-    KEAvg = np.zeros_like(diameter_array)
-    NumKE = np.zeros_like(diameter_array)
-    MaxKE = np.zeros_like(diameter_array)
-    Max_x = np.zeros_like(diameter_array)
-    
-    
     
     my_colors = cm.get_cmap('prism', 256)
     
@@ -483,29 +477,14 @@ def seperate_impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scal
         EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
         findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
         axs.scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
- 
-        deletion1 = np.linspace(0, scallop_length*number_of_scallops*5/8, 1 )
-        deletion2 = np.linspace(scallop_length*number_of_scallops*7/8, scallop_length*number_of_scallops, 1)
-        for k in range(len(deletion1)):
-            KEXAtImpact = np.delete(XAtImpact, int(deletion1[k])  ,axis = 1 )
-        for l in range(len(deletion2)):
-            KEXAtImpact = np.delete(XAtImpact, int(deletion2[l]), axis = 1)
- 
+        KEAvg = np.average(EnergyAtImpact[j,(np.logical_not(np.isnan(EnergyAtImpact[j, :])))][EnergyAtImpact[j,(np.logical_not(np.isnan(EnergyAtImpact[j, :])))]>0])
+        KEMax = np.max(EnergyAtImpact[j,(np.logical_not(np.isnan(EnergyAtImpact[j, :])))])
+        Max_x = XAtImpact[j, np.where(EnergyAtImpact[j, :]==np.max(EnergyAtImpact[j,(np.logical_not(np.isnan(EnergyAtImpact[j, :])))]))[0][0]]
     
-        KESum[j] = np.sum(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
-        NumPos = len(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
-        NumKE[j] = NumPos
-        if NumPos > 0:
-            KEAvg[j] = KESum[j]/NumPos
-        else:
-            KEAvg[j] = 0
-    
-        MaxKE[j] = np.max(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
+        # Max_x[j] = KEXAtImpact[j, np.where(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0]==np.max(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0][np.where(~np.isnan(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0]))]))[0][0]]
         
-        
-        Max_x[j] = KEXAtImpact[j, np.where(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0]==np.max(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0][np.where(~np.isnan(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0]))]))[0][0]]
         axs.set_ylabel('z (cm)') 
-        axs.set_title('D= ' +str(round(diameter_array[j]*10, 2)) + ' mm, avg.KE= ' + str(round(KEAvg[j],2)) + ' ergs, MaxKE= ' +str(round(MaxKE[j],2))+' ergs at x= ' +str(round(Max_x[j],2)))
+        axs.set_title('D= ' +str(round(diameter_array[j]*10, 2)) + ' mm, avg.KE= ' + str(round(KEAvg,2)) + ' ergs, MaxKE= ' +str(round(KEMax,2))+' ergs at x= ' +str(round(Max_x,2)))
         axs.set_xlabel('x (cm)')
     
     return fig, axs
