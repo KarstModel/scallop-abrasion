@@ -574,7 +574,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         OOB_FLAG = False
         BOUNCED = False
         MOVING = True
-        z_init = np.abs((crest_height+0.5*D)*np.random.randn())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
+        z_init = np.abs(4*D*np.random.randn())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
         x_init = np.abs((scallop_length)*np.random.randn())  #add probability distribution later
         if z_init < crest_height:
             z_init = crest_height + 0.05
@@ -592,7 +592,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         
         while not OOB_FLAG and MOVING and location_data[i, time_step, 2] >= 0 and time_step < location_length:        #while that particle is in transport in the water
             
-            while MOVING and BOUNCED and time_step < location_length:
+            if BOUNCED:
                 t += dt2
                 time_step +=1
                 #print('time step in rebound loop, ', time_step)
