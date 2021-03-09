@@ -22,7 +22,7 @@ def __init__(self):
 def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type, scallop_x, scallop_z, loc_data):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))    
     #axs.set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
-    axs.set_ylim(0, scallop_length*2)
+    axs.set_ylim(0, scallop_length*1.5)
     axs.set_aspect('equal')
     axs.plot (scallop_x, scallop_z, 'grey')
     ld = np.array(loc_data, dtype=object)
@@ -330,10 +330,9 @@ def abrasion_and_dissolution_plot(x_array, diam, ErosionAtImpact):
     plt.yticks(visible=True)
     axins.legend(loc = 'upper center')
     mark_inset(axs, axins, loc1=2, loc2=1, fc="none", ec="0.5")
-    
     return fig, axs, axins
 
-def abrasion_and_dissolution_plot_2(x_array, diam, NormErosionAvg):
+def abrasion_and_dissolution_plot_2(x_array, diam, NormErosionAvg, scallop_length):
     cb_max = 0.02
     cb_tiny = 4 * 10**-5
     cb_old = 0.01
@@ -356,7 +355,7 @@ def abrasion_and_dissolution_plot_2(x_array, diam, NormErosionAvg):
     plt.semilogx()
     plt.legend(loc = 'upper left')
     axs.set_xlim(.9,30)
-    axs.set_title('Abrasion Rate Normalized by Number of Impacts on 5 cm Scallops')
+    axs.set_title('Abrasion Rate Normalized by Number of Impacts on '+str(scallop_length)+' cm Scallops')
     axs.set_xlabel('particle grainsize (mm)')
     axs.set_ylabel('abrasional erosion rate (mm/yr)')
     axs.grid(True, which = 'both', axis = 'both')
@@ -403,7 +402,20 @@ def number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, 
     axs.grid(True, which = 'both', axis = 'x')
     
     return fig, axs
+  
+def number_of_impacts_at_loc_plot(diameter_array, XAtImpact, scallop_x, scallop_z, scallop_length):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    axs.set_xlim(scallop_length*0, scallop_length*4)
+    for i in range(len(diameter_array)):
+        GS = np.ones_like(XAtImpact)*diameter_array[i]*10
+        axs.scatter(XAtImpact[i, :], GS[i, :])
+    plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey', zorder=101)
+    plt.title('Particle impacts at each location by grainsize on '+str(scallop_length)+' cm Scallops')
+    axs.set_xlabel('x (cm)')
+    axs.set_ylabel('particle grainsize (mm)')
     
+    return fig, axs
+  
 def Gearys_test(NormErosionAvg):   
     TSS = 0 #total sum of squares
     sum_abs = 0
@@ -419,18 +431,13 @@ def Gearys_test(NormErosionAvg):
     return Gearys_test
 
 def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profile, XAtImpact, ZAtImpact, uScal, scallop_length, number_of_scallops):   
-    
     GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
     ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
     ColorMax = np.ceil(np.max(ColorNumbers))
-    KESum = np.zeros_like(diameter_array)
     KEAvg = np.zeros_like(diameter_array)
-    NumKE = np.zeros_like(diameter_array)
-    
     my_colors = cm.get_cmap('Paired', 256)
     fig, axs = plt.subplots(nrows = len(diameter_array), ncols = 1, sharex=True, figsize = (11, 17))
-    
     for j in range(len(diameter_array)):
         #axs[j].set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
         axs[j].set_ylim(-0.5, 1.5)
@@ -440,18 +447,8 @@ def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profi
         findColors = (np.log10(EnergyAtImpact[j, :]))/ColorMax 
         axs[j].scatter(XAtImpact[j, :], ZAtImpact[j, :], c = my_colors(findColors) )
         KEAvg = np.average(np.logical_not(np.isnan(EnergyAtImpact[j, :])))
-        
-        # KESum[j] = np.sum(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
-        # NumPos = len(EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))][EnergyAtImpact[j, int(len(x_array)/2):int(len(x_array)/2+len(uScal))]>0])
-        # NumKE[j] = NumPos
-        # if NumPos > 0:
-        #     KEAvg[j] = KESum[j]/NumPos
-        # else:
-        #     KEAvg[j] = 0
-    
         axs[j].set_ylabel('z (cm)') 
         axs[j].set_title('D = ' +str(round(diameter_array[j]*10, 2)) + ' mm                     avg.KE = ' + str(round(KEAvg, 2)) + ' ergs')
-    #legend
     fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
                         wspace=0.4, hspace=0.1)
     cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
@@ -459,8 +456,6 @@ def impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profi
     plt.colorbar(cm.ScalarMappable(norm = norm, cmap='Paired'), cax = cb_ax)
     cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
     axs[-1].set_xlabel('x (cm)')
-    #fig.title('Impact locations on '+str(scallop_length)+' cm scallops, colored by particle kinetic energy')
-    
     return fig, axs
 
 def seperate_impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scallop_profile, XAtImpact, ZAtImpact, uScal, scallop_length, number_of_scallops):   
@@ -474,8 +469,8 @@ def seperate_impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scal
     
     for j in range(len(diameter_array)):
         fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-        #axs.set_xlim(scallop_length*number_of_scallops*5/8, (scallop_length*number_of_scallops*7/8))
-        axs.set_ylim(-0.5, 1.5)
+        axs.set_xlim(scallop_length*2, scallop_length*4)
+        axs.set_ylim(-1, 2)
         axs.set_aspect('equal')
         axs.plot(x_array, scallop_profile, 'grey')
         EnergyAtImpact[j, :][EnergyAtImpact[j, :]==0] = np.nan
