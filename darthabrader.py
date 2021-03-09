@@ -552,45 +552,119 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, theta2, mu_kin, crest_height, scallop_length):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, theta2, mu_kin, crest_height, scallop_length, number_of_particles, max_time):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
     g = -981
     m = np.pi * rho_s * D**3 / 6
-    
-    #calculate bedload height as function of grain size (Wilson, 1987)
-    # xi = np.linspace(0, 1, 5)
-    # delta = crest_height + (0.5 + 3.5 * xi)*D
-    # Hf = delta[1]
-    Hf = crest_height + 4
 
-    impact_data = np.zeros(shape=(len(x0), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE, 7 = Re_p, 8 = drag coefficient; one row per particle
+    impact_data = np.zeros(shape=(number_of_particles, 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
-    location_data = []
+    dt2=dt/4
+    #location_data = []
+    location_length = np.rint(max_time/dt2)
+    location_data = np.zeros(shape=(number_of_particles, int(location_length + 1), 5))    # number_of_particles * 1001 time steps * 0 = t, 1 = x, 2 = z, 3 = u, 4 = w
     # define machine epsilon threshold
     eps2=10*np.sqrt( u_w0*np.finfo(float).eps )
 
-    for i in range(len(x0)-1):    #begin one particle at rest at each x-position at its fall height (Hf)
-        h = 0
+    for i in range(number_of_particles):    #begin one particle at horizontal velocity = u_w0, vertical velocity = 0, and a random x and z above the first scallop
+        time_step = 0
         t = 0
         OOB_FLAG = False
-        sediment_location = np.zeros(shape=(1, 5)) 
-        x_init = x0[i]
-        z_init = Hf
+        BOUNCED = False
+        MOVING = True
+        z_init = np.abs(4*D*np.random.randn())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
+        x_init = np.abs((scallop_length)*np.random.randn())  #add probability distribution later
+        if z_init < crest_height:
+            z_init = crest_height + 0.05
+        elif z_init >= ((np.shape(w_water)[0])*0.05-0.05):
+            z_init = (np.shape(w_water)[0])*0.05 - 0.05
+        if x_init < 0.05  or x_init >= ((np.shape(u_water)[1])*0.05-0.05):
+            x_init = 0.05
         z_idx = np.rint(z_init/0.05)
         x_idx = np.rint(x_init/0.05)
         u_init = u_water[int(z_idx), int(x_idx)]
         w_init = w_water[int(z_idx), int(x_idx)]
-        sediment_location[0, :] = [t, x_init, z_init, u_init, w_init]   #initial position and velocity ith particle 
-        #print ('initial velocity(x,z) = (' + str(u_init) + ', ' + str(w_init) +')')
+        location_data[i, time_step, :] = [t, x_init, z_init, u_init, w_init]
+        #print ('initial position (x,z) (cm)= ('+ str(x_init) + ', ' + str(z_init) +')')
+        #print ('initial velocity (u,w) (cm/s)= (' + str(u_init) + ', ' + str(w_init) +')')
         
-        dt2=dt/4
-        while not OOB_FLAG and sediment_location[h, 2] >= 0:        #while that particle is in transport in the water
+        while not OOB_FLAG and MOVING and location_data[i, time_step, 2] >= 0 and time_step < location_length:        #while that particle is in transport in the water
+            
+            if BOUNCED:
+                t += dt2
+                time_step +=1
+                #print('time step in rebound loop, ', time_step)
+                
+                CoR = 0.88  #conservative coefficient of restitution (Imre et al., 2008)
+                if location_data[i,time_step-1,3] != 0:
+                    theta1 = np.arctan(location_data[i,time_step-1, 4]/location_data[i,time_step-1, 3])
+                else:
+                    theta1 = np.pi / 2
+                x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))
+                beta = -theta1 +  2*theta2[int(x_idx)]
+                if np.sin(theta1) != 0:
+                    convert_w = np.sin(beta) / np.sin(theta1)
+                    wp = (CoR * location_data[i,time_step-1, 4] * convert_w)
+                else:
+                    wp = (CoR * location_data[i,time_step-1, 4] * np.sin(beta))
+                if np.cos(theta1) != 0:
+                    convert_u = np.cos(beta) / np.cos(theta1)
+                    up =(CoR * location_data[i,time_step-1, 3] * convert_u)
+                else:
+                    up = (CoR * location_data[i,time_step-1, 3] * np.cos(beta))
+
+                z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
+                if z_idx < 0:
+                    z_idx = 0
+                elif z_idx >= np.shape(w_water)[0]:
+                    OOB_FLAG = True
+                    #print('out of bounds vertically!')
+                    break
+                if x_idx < 0  or x_idx >= np.shape(u_water)[1]:
+                    OOB_FLAG = True
+                    #print('out of bounds horizontally!')
+                    break
+       
+                ww = w_water[int(z_idx), int(x_idx)]
+                wrel = ww - wp
+                uw = u_water[int(z_idx), int(x_idx)]     
+                urel = uw - up
+                
+                # these blocks make sure the relative velocity is sufficiently above 
+                # machine precision that squaring it in the next step doesn't result in underflow
+                if np.abs(wrel) > eps2:                                       
+                    Re_p = particle_reynolds_number(D, wrel, mu_kin)
+                    drag_coef = dragcoeff(Re_p)
+                    az = (1 - (rho_w/rho_s)) * g + np.sign(wrel) * ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                    #print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
+                else:
+                    az = 0
+                              
+                if np.abs(urel) > eps2:
+                    Re_p = particle_reynolds_number(D, urel, mu_kin)
+                    drag_coef = dragcoeff(Re_p)
+                    ax = np.sign(urel) * ((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
+                    #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
+                else:
+                    ax = 0
+                
+                #use reflected velocity components to advance one time step in rebound direction, then return to flow control in outer while loop
+                u_rebound = up + (ax * dt2)
+                w_rebound = wp + (az * dt2)
+                x_rebound = location_data[i,time_step-1, 1] + u_rebound * dt2 + 0.5 * ax * dt2**2 
+                z_rebound = location_data[i,time_step-1, 2] + w_rebound * dt2 + 0.5 * az * dt2**2   
+                #print('x_r',x_rebound,'z_r',z_rebound,'u_r',u_rebound,'w_r',w_rebound)
+
+                location_data[i, time_step, :] = [t, x_rebound, z_rebound, u_rebound, w_rebound]
+                BOUNCED = False
+                
             t += dt2
-            # get current location with respect to computational mesh at time = t - dt
-            x_idx = np.rint((sediment_location[h, 1]/0.05))                
-            z_idx = np.rint((sediment_location[h, 2]/0.05))
+            time_step += 1
+           # print ('time step in main while loop, ', time_step)
+            x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))                
+            z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
             if z_idx < 0:
                 z_idx = 0
             elif z_idx >= np.shape(w_water)[0]:
@@ -602,10 +676,10 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 #print('out of bounds horizontally!')
                 break
    
-            wp = sediment_location[h, 4]
+            wp = location_data[i,time_step-1, 4]
             ww = w_water[int(z_idx), int(x_idx)]
             wrel = ww - wp
-            up = sediment_location[h, 3]
+            up = location_data[i,time_step-1, 3]
             uw = u_water[int(z_idx), int(x_idx)]     
             urel = uw - up
             
@@ -627,15 +701,16 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             else:
                 ax = 0
                 
-            pi_u = sediment_location[h, 3] + (ax * dt2)
-            pi_w = sediment_location[h, 4] + (az * dt2)
-            pi_x = sediment_location[h, 1] + pi_u * dt2 + 0.5 * ax * dt2**2 
-            pi_z = sediment_location[h, 2] + pi_w * dt2 + 0.5 * az * dt2**2   
+            pi_u = location_data[i,time_step-1, 3] + (ax * dt2)
+            pi_w = location_data[i,time_step-1, 4] + (az * dt2)
+            pi_x = location_data[i,time_step-1, 1] + pi_u * dt2 + 0.5 * ax * dt2**2 
+            pi_z = location_data[i,time_step-1, 2] + pi_w * dt2 + 0.5 * az * dt2**2   
 
-            sediment_location = np.append(sediment_location, [[t, pi_x, pi_z, pi_u, pi_w]], axis = 0)
-            #print('x',pi_x,'z',pi_z)
+            location_data[i,time_step, :] = [t, pi_x, pi_z, pi_u, pi_w]
+            #print('x',pi_x,'z',pi_z,'u',pi_u,'w',pi_w)
             
             if pi_u == 0 and pi_w == 0:
+                MOVING = False
                 # grain is stuck
                 break
             
@@ -654,20 +729,23 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 break                        
             
             if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
-                impact_data[i, :5] = sediment_location[h+1]
-                #print('impact!')
-                break
-            
-            h+=1
-            #print('h',h)
+                impact_data[i, :5] = location_data[i,time_step, :]
+                BOUNCED = True
+               # print('impact!')
+                
     
         if impact_data[i,3] != 0:
             theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
         else:
             #print('div/0 or other error in theta1')
             theta1 = 0
+        
+        if x_idx < 0  or x_idx >= np.shape(u_water)[1]:
+            OOB_FLAG = True
+            #print('out of bounds horizontally!')
+            break
             
-        alpha = np.pi - theta1 - theta2[i]          # angle of impact
+        alpha = theta1 - theta2[int(x_idx)]          # angle of impact
             
         impact_data[i, 5] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
         if impact_data[i, 5] <= 0:          
@@ -676,8 +754,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             impact_data[i, 6] += 0 
         
 
-        location_data.append(sediment_location)   # store trajectory for plotting        
-        #print('bedload thickness = ', Hf)
         
     return impact_data, location_data
        

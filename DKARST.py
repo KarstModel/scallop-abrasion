@@ -46,15 +46,18 @@ plt.close('all')
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
 l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 6  #number of grainsizes to simulate in diameter array
-numScal = 8  #number of scallops
+n = 100  #number of grainsizes to simulate in diameter array
+numScal = 24  #number of scallops
+numPrtkl = 500 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
 
 #grain_diam_max = 0.5 * l32 
-grain_diam_max = 2.5
+grain_diam_max = 5
 grain_diam_min = .1
+
+max_time = 10  #seconds
 
 # =============================================================================
 
@@ -89,11 +92,11 @@ elif flow_regime == 'turbulent':
 # definitions and parameters
 
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
-EnergyAtImpact = np.empty(shape = (len(diam), len(x0)))
-XAtImpact = np.empty(shape = (len(diam), len(x0)))
-ZAtImpact = np.empty(shape = (len(diam), len(x0)))
-ErosionAtImpact = np.empty(shape = (len(diam), len(x0)))
-VelocityAtImpact = np.empty(shape = (len(diam), len(x0)))
+EnergyAtImpact = np.empty(shape = (n, numPrtkl))
+XAtImpact = np.empty(shape = (n, numPrtkl))
+ZAtImpact = np.empty(shape = (n, numPrtkl))
+ErosionAtImpact = np.empty(shape = (n, numPrtkl))
+VelocityAtImpact = np.empty(shape = (n, numPrtkl))
 ParticleDrag = np.empty_like(diam)
 ParticleReynolds = np.empty_like(diam)
 ImpactEnergyAvg = np.empty_like(diam)
@@ -119,25 +122,17 @@ for D in diam:
     cb = 0.01    #bedload sediment concentration
     
     cH = np.max(z0)   # crest height
-    # xi = np.linspace(0, 1, 5)
-    # delta = cH + (0.5 + 3.5 * xi)*D
-    # Hf = delta[1]
-    
-    Hf = cH + 4
-
     u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
     
     # In[10]:
     
-    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32)
+    impact_data, loc_data= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, 0.05, theta2, mu_water, cH, l32, numPrtkl, max_time)
     
     ###sort output data into arrays
     NumberImpacts = np.count_nonzero(impact_data[:, 6])
     TotalImpactEnergy[i] = np.sum(impact_data[300:401, 6])
     if (NumberImpacts != 0):
         ImpactEnergyAvg[i] = TotalImpactEnergy[i]/NumberImpacts 
-    ParticleDrag[i] = np.average(impact_data[:, 8])
-    ParticleReynolds[i] = np.average(impact_data[:, 7])
     EnergyAtImpact[i, :] = impact_data[:, 6]
     XAtImpact[i, :] = impact_data[:, 1]
     ZAtImpact[i, :] = impact_data[:, 2]
@@ -150,22 +145,18 @@ for D in diam:
     i += 1
     
     if n <= 30:
-        fig, axs = spl.trajectory_figures(l32, numScal, D, grain, Hf, x0, z0, loc_data)
+        fig, axs = spl.trajectory_figures(l32, numScal, D, grain, x0, z0, loc_data)
         plt.show()
 
 
-#Process velocity array to average values over one scallop length
-VelocityAvg = np.zeros_like(diam)
-for r in range(len(diam)):
-    VelocityAvg[r] = -np.average(VelocityAtImpact[r, int(len(x0)/2):int(len(x0)/2+len(uScal))][VelocityAtImpact[r, int(len(x0)/2):int(len(x0)/2+len(uScal))]<0])
 
 #Process erosion rate array to average values over one scallop length and normalize by number of impacts
 ErosionSum = np.zeros_like(diam)
 NormErosionAvg = np.zeros_like(diam)
 NumberOfImpactsByGS = np.zeros_like(diam)
 for r in range(len(diam)):
-    ErosionSum[r] = -np.sum(ErosionAtImpact[r, int(len(x0)/2):int(len(x0)/2+len(uScal))][ErosionAtImpact[r, int(len(x0)/2):int(len(x0)/2+len(uScal))]<0]*1000*36*24*365.25)
-    NumberPositives = len(ErosionAtImpact[r, int(len(x0)/2):int(len(x0)/2+len(uScal))][ErosionAtImpact[r, int(len(x0)/2):int(len(x0)/2+len(uScal))]<0])
+    ErosionSum[r] = -np.sum(ErosionAtImpact[r, :][ErosionAtImpact[r, :]<0]*1000*36*24*365.25)
+    NumberPositives = len(ErosionAtImpact[r, :][ErosionAtImpact[r, :]<0])
     NumberOfImpactsByGS[r] = NumberPositives
     if NumberPositives > 0:
         NormErosionAvg[r] = ErosionSum[r]/NumberPositives
@@ -173,32 +164,29 @@ for r in range(len(diam)):
         NormErosionAvg[r] = 0
 
 # ####save all data
-# import datetime
-# now = datetime.datetime.now()
-# time_stamp = now.strftime('%Y-%m-%d')
-# np.savetxt(join(outfolder,'VelocityAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),VelocityAtImpact,delimiter=",")
-# np.savetxt(join(outfolder,'ImpactEnergyAvg'+str(l32)+flow_regime+time_stamp+'.csv'),ImpactEnergyAvg,delimiter=",")
-# np.savetxt(join(outfolder,'VelocityAvg'+str(l32)+flow_regime+time_stamp+'.csv'),VelocityAvg,delimiter=",")
-# np.savetxt(join(outfolder,'EnergyAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),EnergyAtImpact,delimiter=",")
-# np.savetxt(join(outfolder,'XAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),XAtImpact,delimiter=",")
-# np.savetxt(join(outfolder,'ZAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),ZAtImpact,delimiter=",")
-# np.savetxt(join(outfolder,'ErosionAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),ErosionAtImpact,delimiter=",")
-# np.savetxt(join(outfolder,'MaxVelocities'+str(l32)+flow_regime+time_stamp+'.csv'),MaxVelocities,delimiter=",")
-# np.savetxt(join(outfolder,'diam'+str(l32)+flow_regime+time_stamp+'.csv'),diam,delimiter=",")
-# np.savetxt(join(outfolder,'TotalImpactEnergy'+str(l32)+flow_regime+time_stamp+'.csv'),TotalImpactEnergy,delimiter=",")
-# np.savetxt(join(outfolder,'ParticleDrag'+str(l32)+flow_regime+time_stamp+'.csv'),ParticleDrag,delimiter=",")
-# np.savetxt(join(outfolder,'ParticleReynolds'+str(l32)+flow_regime+time_stamp+'.csv'),ParticleReynolds,delimiter=",")
-# np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv'),NormErosionAvg,delimiter=",")
+import datetime
+now = datetime.datetime.now()
+time_stamp = now.strftime('%Y-%m-%d')
+np.savetxt(join(outfolder,'VelocityAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),VelocityAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'ImpactEnergyAvg'+str(l32)+flow_regime+time_stamp+'.csv'),ImpactEnergyAvg,delimiter=",")
+np.savetxt(join(outfolder,'EnergyAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),EnergyAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'XAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),XAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'ZAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),ZAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'ErosionAtImpact'+str(l32)+flow_regime+time_stamp+'.csv'),ErosionAtImpact,delimiter=",")
+np.savetxt(join(outfolder,'MaxVelocities'+str(l32)+flow_regime+time_stamp+'.csv'),MaxVelocities,delimiter=",")
+np.savetxt(join(outfolder,'diam'+str(l32)+flow_regime+time_stamp+'.csv'),diam,delimiter=",")
+np.savetxt(join(outfolder,'TotalImpactEnergy'+str(l32)+flow_regime+time_stamp+'.csv'),TotalImpactEnergy,delimiter=",")
+np.savetxt(join(outfolder,'NormErosionAvg'+str(l32)+flow_regime+time_stamp+'.csv'),NormErosionAvg,delimiter=",")
 
-####plot results; all plotting schemes available in scallopplotlib.py
-pars, stdevs, res, fig, axs = spl.average_velocities_plot_fit_to_Dietrich(rho_quartz, rho_water, diam, l32, VelocityAvg, Hf)
+# ####plot results; all plotting schemes available in scallopplotlib.py
+pars, stdevs, res, fig, axs = spl.average_velocities_plot_fit_to_Dietrich(rho_quartz, rho_water, diam, l32, VelocityAtImpact, numPrtkl)
 plt.show()
 
-# # fig, axs = spl.abrasion_and_dissolution_plot_2(x0)
-# # plt.show()
+# fig, axs = spl.seperate_impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
+# plt.show()
 
-fig, axs = spl.abrasion_by_slope(dzdx, ErosionAtImpact, diam, l32)
+fig, axs = spl.abrasion_and_dissolution_plot_2(x0, diam, NormErosionAvg, l32)
 plt.show()
 
-fig, axs = spl.impact_locations_plot(EnergyAtImpact, diam, x0, z0, XAtImpact, ZAtImpact, uScal, l32, numScal)
+fig, axs = spl.number_of_impacts_at_loc_plot(diam, XAtImpact, x0, z0, l32)
 plt.show()
