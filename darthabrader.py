@@ -597,7 +597,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 time_step +=1
                 #print('time step in rebound loop, ', time_step)
                 
-                CoR = 0.9  #conservative coefficient of restitution, calculate reflected velocity components
+                CoR = 0.88  #conservative coefficient of restitution (Imre et al., 2008)
                 if location_data[i,time_step-1,3] != 0:
                     theta1 = np.arctan(location_data[i,time_step-1, 4]/location_data[i,time_step-1, 3])
                 else:
@@ -739,6 +739,11 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         else:
             #print('div/0 or other error in theta1')
             theta1 = 0
+        
+        if x_idx < 0  or x_idx >= np.shape(u_water)[1]:
+            OOB_FLAG = True
+            #print('out of bounds horizontally!')
+            break
             
         alpha = theta1 - theta2[int(x_idx)]          # angle of impact
             
