@@ -347,8 +347,8 @@ def abrasion_and_dissolution_plot_2(x_array, diam, NormErosionAvg, scallop_lengt
         NEA5_new = NEA5_old * cb[i]/cb_old
         axs.scatter((Diam5*10), (NEA5_new), label = 'bedload concentration = '+str(round(cb[i], 5)))
     
-    diss_min = 5.66    #minimum dissolution rate (mm/yr) (Grm et al., 2017)
-    diss_max = 12.175  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
+    diss_min = 5.66 * 5 / scallop_length    #minimum dissolution rate (mm/yr) (Grm et al., 2017) over 5 cm scallops, scaling from Curl (1966)
+    diss_max = 13.472 * 5 / scallop_length #maximum dissolution rate (mm/yr) (Hammer et al., 2011) over 5 cm scallops, scaling from Curl (1966)
     x = np.linspace(0.9, 25)
     plt.fill_between(x, diss_min, diss_max, alpha = 0.4, color = 'gray', label = 'dissolutional range')
     
@@ -403,14 +403,27 @@ def number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, 
     
     return fig, axs
   
-def number_of_impacts_at_loc_plot(diameter_array, XAtImpact, scallop_x, scallop_z, scallop_length):
+def number_of_impacts_at_loc_plot(diameter_array, XAtImpact, scallop_x, scallop_z, scallop_length, EnergyAtImpact):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    axs.set_xlim(scallop_length*0, scallop_length*4)
+    GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
+    ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
+    ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
+    ColorMax = np.ceil(np.max(ColorNumbers))
+    my_colors = cm.get_cmap('gist_rainbow_r', 256)
+    #axs.set_xlim(0, n*10)
     for i in range(len(diameter_array)):
         GS = np.ones_like(XAtImpact)*diameter_array[i]*10
-        axs.scatter(XAtImpact[i, :], GS[i, :])
-    plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey', zorder=101)
+        EnergyAtImpact[i, :][EnergyAtImpact[i, :]==0] = np.nan
+        findColors = (np.log10(EnergyAtImpact[i, :]))/ColorMax
+        axs.scatter(XAtImpact[i, :], GS[i, :], c = my_colors(findColors))
+    plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey')
+    fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
+                        wspace=0.4, hspace=0.1)
     plt.title('Particle impacts at each location by grainsize on '+str(scallop_length)+' cm Scallops')
+    cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
+    norm = colors.Normalize(vmin = 0, vmax = ColorMax)
+    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='gist_rainbow_r'), cax = cb_ax)
+    cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
     axs.set_xlabel('x (cm)')
     axs.set_ylabel('particle grainsize (mm)')
     
