@@ -574,8 +574,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         OOB_FLAG = False
         BOUNCED = False
         MOVING = True
-        z_init = np.abs(4*D*np.random.randn())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
-        x_init = np.abs((scallop_length)*np.random.randn())  #add probability distribution later
+        z_init = np.abs(4*D*np.random.rand())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
+        x_init = np.abs((scallop_length)*np.random.rand())  #add probability distribution later
         if z_init < crest_height:
             z_init = crest_height + 0.05
         elif z_init >= ((np.shape(w_water)[0])*0.05-0.05):
