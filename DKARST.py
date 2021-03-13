@@ -47,7 +47,7 @@ plt.close('all')
 outfolder='./outputs'  # make sure this exists first
 l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 100  #number of grainsizes to simulate in diameter array
-numScal = 24  #number of scallops
+numScal = 24 #number of scallops
 numPrtkl = 500 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
@@ -188,5 +188,5 @@ plt.show()
 fig, axs = spl.abrasion_and_dissolution_plot_2(x0, diam, NormErosionAvg, l32)
 plt.show()
 
-fig, axs = spl.number_of_impacts_at_loc_plot(diam, XAtImpact, x0, z0, l32)
+fig, axs = spl.number_of_impacts_at_loc_plot(diam, XAtImpact, x0, z0, l32, EnergyAtImpact)
 plt.show()
