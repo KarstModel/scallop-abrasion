@@ -562,7 +562,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     impact_data = np.zeros(shape=(number_of_particles, 7))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = |Vel|, 6 = KE; one row per particle
     dt = dx / u_w0
     dt2=dt/4
-    #location_data = []
     location_length = np.rint(max_time/dt2)
     location_data = np.zeros(shape=(number_of_particles, int(location_length + 1), 5))    # number_of_particles * 1001 time steps * 0 = t, 1 = x, 2 = z, 3 = u, 4 = w
     # define machine epsilon threshold
