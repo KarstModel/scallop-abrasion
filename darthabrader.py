@@ -573,7 +573,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         OOB_FLAG = False
         BOUNCED = False
         MOVING = True
-        z_init = np.abs(4*D*np.random.rand())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
+        z_init = np.abs(2*D*np.random.rand())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
         x_init = np.abs((scallop_length)*np.random.rand())  #add probability distribution later
         if z_init < crest_height:
             z_init = crest_height + 0.05
@@ -586,8 +586,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         u_init = u_water[int(z_idx), int(x_idx)]
         w_init = w_water[int(z_idx), int(x_idx)]
         location_data[i, time_step, :] = [t, x_init, z_init, u_init, w_init]
-        #print ('initial position (x,z) (cm)= ('+ str(x_init) + ', ' + str(z_init) +')')
-        #print ('initial velocity (u,w) (cm/s)= (' + str(u_init) + ', ' + str(w_init) +')')
         
         while not OOB_FLAG and MOVING and location_data[i, time_step, 2] >= 0 and time_step < location_length:        #while that particle is in transport in the water
             
@@ -626,25 +624,19 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                     #print('out of bounds horizontally!')
                     break
        
-                ww = w_water[int(z_idx), int(x_idx)]
-                wrel = ww - wp
-                uw = u_water[int(z_idx), int(x_idx)]     
-                urel = uw - up
-                
-                # these blocks make sure the relative velocity is sufficiently above 
-                # machine precision that squaring it in the next step doesn't result in underflow
-                if np.abs(wrel) > eps2:                                       
-                    Re_p = particle_reynolds_number(D, wrel, mu_kin)
+                ### since, by definition, water velocity at the wall equals zero, the relative velocity at rebound is equal to the reflected velocity of the particle
+                if np.abs(wp) > eps2:                                       
+                    Re_p = particle_reynolds_number(D, wp, mu_kin)
                     drag_coef = dragcoeff(Re_p)
-                    az = (1 - (rho_w/rho_s)) * g + np.sign(wrel) * ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
+                    az = (1 - (rho_w/rho_s)) * g + np.sign(wp) * ((3 * rho_w * drag_coef) * (wp**2) /(4 * rho_s * D))  
                     #print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
                 else:
                     az = 0
                               
-                if np.abs(urel) > eps2:
-                    Re_p = particle_reynolds_number(D, urel, mu_kin)
+                if np.abs(up) > eps2:
+                    Re_p = particle_reynolds_number(D, up, mu_kin)
                     drag_coef = dragcoeff(Re_p)
-                    ax = np.sign(urel) * ((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
+                    ax = np.sign(up) * ((3 * rho_w * drag_coef) * (up**2) /(4 * rho_s * D))      
                     #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
                 else:
                     ax = 0
@@ -661,7 +653,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
             t += dt2
             time_step += 1
-           # print ('time step in main while loop, ', time_step)
             x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))                
             z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
             if z_idx < 0:
