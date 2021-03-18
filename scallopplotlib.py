@@ -25,15 +25,16 @@ def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type,
     axs.set_ylim(0, scallop_length*1.5)
     #axs.set_aspect('equal')
     axs.plot (scallop_x, scallop_z, 'grey')
-    ld = np.array(loc_data[np.where(np.any(loc_data))], dtype=object)
+    ld = np.array(loc_data, dtype = object)
+    # ld = np.array(loc_data[np.where(np.any(loc_data))], dtype=object)
     
-    for r in range(len(ld)):
-        if not np.any(ld[r, :]):
-            np.delete(ld, r, 0)
-        else:
-            continue
+    # for r in range(len(ld)):
+    #     if not np.any(ld[r, :]):
+    #         np.delete(ld, r, 0)
+    #     else:
+    #         continue
 
-    for p in ld[(np.random.randint(len(ld)-1,size=100)).astype(int)]:
+    for p in ld[(np.random.randint(len(loc_data)-1,size=100)).astype(int)]:
         axs.plot(p[:,1], p[:,2], 2)
         
     plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey', zorder=101)
