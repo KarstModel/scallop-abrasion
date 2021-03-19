@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb 13 12:36:05 2021
+Created on Thurs March 18 21:36:05 2021
 
-@author: rache
+@author: rachel bosch
+
+This code replaces "DataAnalysisScratchPad" to reflect major changes in data storage and retrieval.
 """
 import numpy as np
 from matplotlib import pyplot as plt
