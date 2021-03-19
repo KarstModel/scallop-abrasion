@@ -21,9 +21,7 @@ def __init__(self):
 
 def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type, scallop_x, scallop_z, loc_data):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,4))    
-    #axs.set_xlim(scallop_length*number_of_scallops/2, (scallop_length*number_of_scallops))
-    axs.set_ylim(0, scallop_length*1.5)
-    #axs.set_aspect('equal')
+    axs.set_aspect('equal')
     axs.plot (scallop_x, scallop_z, 'grey')
     ld = np.array(loc_data, dtype = object)
     
@@ -404,29 +402,33 @@ def number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, 
     
     return fig, axs
   
-def number_of_impacts_at_loc_plot(diameter_array, XAtImpact, scallop_x, scallop_z, scallop_length, EnergyAtImpact):
+def number_of_impacts_at_loc_plot(diameter_array, scallop_x, scallop_z, scallop_length, All_Impacts, initial_conditions):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    GetMaxEnergies = EnergyAtImpact[-1, :][EnergyAtImpact[-1, :] != 0]
+    GetMaxEnergies = All_Impacts[:, :, 7][All_Impacts[:, :, 7] != 0]
     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
     ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
     ColorMax = np.ceil(np.max(ColorNumbers))
     my_colors = cm.get_cmap('gist_rainbow_r', 256)
     #axs.set_xlim(0, n*10)
     for i in range(len(diameter_array)):
-        GS = np.ones_like(XAtImpact)*diameter_array[i]*10
-        EnergyAtImpact[i, :][EnergyAtImpact[i, :]==0] = np.nan
-        findColors = (np.log10(EnergyAtImpact[i, :]))/ColorMax
-        axs.scatter(XAtImpact[i, :], GS[i, :], c = my_colors(findColors))
-    plt.fill_between(scallop_x, scallop_z, 0, alpha = 1, color = 'grey')
+       # GS = np.ones_like(All_Impacts[:, :, 1][All_Impacts[:, :, 7] != 0])*diameter_array[i]*10
+        All_Impacts[i, :, 7][All_Impacts[i, :, 7] == 0] = np.nan
+        findColors = (np.log10(All_Impacts[i, :, 7]))/ColorMax
+        #axs.scatter(XAtImpact[i, :], GS[i, :], c = my_colors(findColors))
+        axs.scatter(All_Impacts[i, :, 1][All_Impacts[i, :, 7] != 0], All_Impacts[i, :, 5][All_Impacts[i, :, 7] != 0], c = my_colors(findColors)) #, s = 24 * GS[i])
+    plt.fill_between(scallop_x, scallop_z/4, 0, alpha = 1, color = 'grey')
     fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
                         wspace=0.4, hspace=0.1)
     plt.title('Particle impacts at each location by grainsize on '+str(scallop_length)+' cm Scallops')
+    #plt.title('Particle impacts at each location by fall height on '+str(scallop_length)+' cm Scallops')
     cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
     norm = colors.Normalize(vmin = 0, vmax = ColorMax)
     plt.colorbar(cm.ScalarMappable(norm = norm, cmap='gist_rainbow_r'), cax = cb_ax)
     cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
     axs.set_xlabel('x (cm)')
     axs.set_ylabel('particle grainsize (mm)')
+    #axs.set_ylabel('fall height (cm)')
+
     
     return fig, axs
   
