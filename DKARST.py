@@ -90,7 +90,7 @@ elif flow_regime == 'turbulent':
 # definitions and parameters
 
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
-All_Initial_Conditions = np.empty(shape = (n, numPrtkl, 4))
+All_Initial_Conditions = np.empty(shape = (n, numPrtkl, 5))
 All_Impacts = np.empty(shape = (n, 100000, 8))
 
 # loop over diameter array to run the saltation function for each grainsize
@@ -149,5 +149,5 @@ np.save(join(outfolder,'InitialConditions-'+str(l32)+flow_regime+time_stamp+'.cs
 # # fig, axs = spl.abrasion_and_dissolution_plot_2(x0, diam, NormErosionAvg, l32)
 # # plt.show()
 
-# fig, axs = spl.number_of_impacts_at_loc_plot(diam, x0, z0, l32, All_Impacts, All_Initial_Conditions)
-# plt.show()
+fig, axs = spl.number_of_impacts_at_loc_plot(diam, x0, z0, l32, All_Impacts, All_Initial_Conditions)
+plt.show()
