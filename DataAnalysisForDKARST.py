@@ -31,44 +31,45 @@ Impact_Data = np.load('outputs\Impacts-2.5turbulent2021-03-18.csv.npy')
 # =============================================================================
 # Form of Impact Data array:
 #   data collected every time a particle impacts the bedrock surface
-#       shape = (n, 100000, 8)
+#       shape = (n, 100000, 9)
 #           n = number of grain sizes in diameter array
 #           100000 pre-allocated to be greater than number of time-steps
-#           0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE
+#           0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE, 8 = particle ID,
+#               links to numPartkl in Initial Conditions array
 # =============================================================================
 
 
-# l32 = 1
-# dx0 = 0.05/l32
-# numScal = 60
-# xScal1 = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
-# uScal1 = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
-# x01, z01 = da.scallop_array(xScal1, uScal1, numScal, l32)   #initial scallop profile, dimensions in centimeters
-# z01 = z01 - np.min(z01)
+l32 = 1
+dx0 = 0.05/l32
+numScal = 60
+xScal1 = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
+uScal1 = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
+x01, z01 = da.scallop_array(xScal1, uScal1, numScal, l32)   #initial scallop profile, dimensions in centimeters
+z01 = z01 - np.min(z01)
 
-# l32 = 2.5
-# dx0 = 0.05/l32
-# numScal = 48
-# xScal2 = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
-# uScal2 = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
-# x02_5, z02_5 = da.scallop_array(xScal2, uScal2, numScal, l32)   #initial scallop profile, dimensions in centimeters
-# z02_5 = z02_5 - np.min(z02_5)
+l32 = 2.5
+dx0 = 0.05/l32
+numScal = 48
+xScal2 = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
+uScal2 = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
+x02_5, z02_5 = da.scallop_array(xScal2, uScal2, numScal, l32)   #initial scallop profile, dimensions in centimeters
+z02_5 = z02_5 - np.min(z02_5)
 
-# l32 = 5
-# dx0 = 0.05/l32
-# numScal = 36
-# xScal5 = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
-# uScal5 = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
-# x05, z05 = da.scallop_array(xScal5, uScal5, numScal, l32)   #initial scallop profile, dimensions in centimeters
-# z05 = z05 - np.min(z05)
+l32 = 5
+dx0 = 0.05/l32
+numScal = 36
+xScal5 = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
+uScal5 = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
+x05, z05 = da.scallop_array(xScal5, uScal5, numScal, l32)   #initial scallop profile, dimensions in centimeters
+z05 = z05 - np.min(z05)
 
-# l32 = 10
-# dx0 = 0.05/l32
-# numScal = 24
-# xScal10 = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
-# uScal10 = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
-# x010, z010 = da.scallop_array(xScal10, uScal10, numScal, l32)   #initial scallop profile, dimensions in centimeters
-# z010 = z010 - np.min(z010)
+l32 = 10
+dx0 = 0.05/l32
+numScal = 24
+xScal10 = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
+uScal10 = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
+x010, z010 = da.scallop_array(xScal10, uScal10, numScal, l32)   #initial scallop profile, dimensions in centimeters
+z010 = z010 - np.min(z010)
 
 
 
