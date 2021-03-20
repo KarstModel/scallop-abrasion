@@ -565,7 +565,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     dt2=dt/4
     location_length = np.rint(max_time/dt2)
     location_data = np.zeros(shape=(number_of_particles, int(location_length + 1), 6))    # number_of_particles * 1001 time steps * 0 = t, 1 = x, 2 = z, 3 = u, 4 = w, 5 = diameter
-    impact_data = np.zeros(shape=(int(location_length), 8))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE; one row per time step
+    impact_data = np.zeros(shape=(int(location_length), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE, 8 = particle ID; one row per time step
     # define machine epsilon threshold
     eps2=10*np.sqrt( u_w0*np.finfo(float).eps )
 
@@ -576,8 +576,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         BOUNCED = False
         MOVING = True
         HIGH_WATER = False
-        z_init = np.abs(2*D*np.random.rand())     #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
-        x_init = np.abs((scallop_length)*np.random.rand())  #add probability distribution later
+        z_init = (scallop_length*np.random.rand())    #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
+        x_init = (scallop_length*np.random.rand())  #add probability distribution later
         if z_init < crest_height:
             z_init = crest_height + 0.05
         elif z_init >= ((np.shape(w_water)[0])*0.05-0.05):
@@ -591,8 +591,9 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         location_data[i, time_step, :] = [t, x_init, z_init, u_init, w_init, D]
         initial_conditions[i, :] = [x_init, z_init, u_init, w_init, D]
         
-        while not OOB_FLAG and MOVING and location_data[i, time_step, 2] >= 0 and time_step < location_length:        #while that particle is in transport in the water
-            
+        while not OOB_FLAG and MOVING and location_data[i, time_step, 2] >= 0 and time_step < location_length - 2:        #while that particle is in transport in the water
+                
+        
             if BOUNCED:
                 t += dt2
                 time_step +=1
@@ -729,6 +730,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             
             if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
                 impact_data[time_step, :6] = location_data[i,time_step, :]
+                impact_data[time_step, 8] = i    #particle identifier to link to initial conditions
                 BOUNCED = True
                # print('impact!')
             
@@ -737,8 +739,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 #print('longest time, ', longest_time)
                 
     
-        if impact_data[i,3] != 0:
-            theta1 = np.arctan(impact_data[i, 4]/impact_data[i, 3])             
+        if impact_data[time_step,3] != 0:
+            theta1 = np.arctan(impact_data[time_step, 4]/impact_data[time_step, 3])             
         else:
             #print('div/0 or other error in theta1')
             theta1 = 0
@@ -749,12 +751,14 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             break
             
         alpha = theta1 - theta2[int(x_idx)]          # angle of impact
+        
             
-        impact_data[i, 6] = (np.sqrt(impact_data[i, 4]**2 + impact_data[i, 3]**2))*np.sin(alpha)
-        if impact_data[i, 6] <= 0:          
-            impact_data[i, 7] += 0.5 * m * impact_data[i, 6]**2
+        impact_data[time_step, 6] = (np.sqrt(impact_data[time_step, 4]**2 + impact_data[time_step, 3]**2))*np.sin(alpha)
+    
+        if impact_data[time_step, 6] <= 0:          
+            impact_data[time_step, 7] += 0.5 * m * impact_data[time_step, 6]**2
         else:
-            impact_data[i, 7] += 0 
+            impact_data[time_step, 7] += 0 
             
         
         
