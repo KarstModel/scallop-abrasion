@@ -45,16 +45,16 @@ plt.close('all')
 # ### user input: 
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
-l32 = 2.5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+l32 = 1 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 5  #number of grainsizes to simulate in diameter array
-numScal = 20 #number of scallops
-numPrtkl = 100 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
+numScal = 100 #number of scallops
+numPrtkl = 500 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
     l32 = 5
 
 grain_diam_max = 0.5 * l32 
-grain_diam_min = 1
+grain_diam_min = 0.05
 max_time = 10  #seconds
 if l32 == 2.5:
     max_time = 4
@@ -90,8 +90,8 @@ elif flow_regime == 'turbulent':
 # definitions and parameters
 
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
-All_Initial_Conditions = np.empty(shape = (n, numPrtkl, 5))
-All_Impacts = np.empty(shape = (n, 100000, 8))
+All_Initial_Conditions = np.zeros(shape = (n, numPrtkl, 5))
+All_Impacts = np.zeros(shape = (n, 500000, 9))
 
 # loop over diameter array to run the saltation function for each grainsize
 i = 0
@@ -128,12 +128,12 @@ for D in diam:
         fig, axs = spl.trajectory_figures(l32, numScal, D, grain, x0, z0, loc_data)
         plt.show()
 
-# ####save all data
-import datetime
-now = datetime.datetime.now()
-time_stamp = now.strftime('%Y-%m-%d')
-np.save(join(outfolder,'Impacts-'+str(l32)+flow_regime+time_stamp+'.csv'), All_Impacts)
-np.save(join(outfolder,'InitialConditions-'+str(l32)+flow_regime+time_stamp+'.csv'), All_Initial_Conditions)
+# # ####save all data
+# import datetime
+# now = datetime.datetime.now()
+# time_stamp = now.strftime('%Y-%m-%d')
+# np.save(join(outfolder,'Impacts-'+str(l32)+flow_regime+time_stamp+'.csv'), All_Impacts)
+# np.save(join(outfolder,'InitialConditions-'+str(l32)+flow_regime+time_stamp+'.csv'), All_Initial_Conditions)
 
 
 
