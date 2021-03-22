@@ -47,7 +47,7 @@ plt.close('all')
 outfolder='./outputs'  # make sure this exists first
 l32 = 1 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
 n = 5  #number of grainsizes to simulate in diameter array
-numScal = 100 #number of scallops
+numScal = 80 #number of scallops
 numPrtkl = 500 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
@@ -132,8 +132,8 @@ for D in diam:
 # import datetime
 # now = datetime.datetime.now()
 # time_stamp = now.strftime('%Y-%m-%d')
-# np.save(join(outfolder,'Impacts-'+str(l32)+flow_regime+time_stamp+'.csv'), All_Impacts)
-# np.save(join(outfolder,'InitialConditions-'+str(l32)+flow_regime+time_stamp+'.csv'), All_Initial_Conditions)
+# np.save(join(outfolder,'Impacts-'+str(l32)+flow_regime+time_stamp), All_Impacts)
+# np.save(join(outfolder,'InitialConditions-'+str(l32)+flow_regime+time_stamp), All_Initial_Conditions)
 
 
 
