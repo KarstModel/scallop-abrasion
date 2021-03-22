@@ -212,37 +212,36 @@ for i in range(len(scallop_lengths)):
     axs.set_ylabel('fall height (cm)')
     plt.show()
 
-    #      ## impacts by scallop phase plot, scallop crest == 0, 2*pi
-    #     ### try radially (distance from center proportional to impact energy?)
-    # fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    # GetMaxEnergies = Impact_Data[i][:, :, 7][Impact_Data[i][:, :, 7] != 0]
-    # ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
-    # ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
-    # ColorMax = np.ceil(np.max(ColorNumbers))
-    # my_colors = cm.get_cmap('YlGn_r', 256)
-    # # axs.set_xlim(0, int(number_of_scallops[i]*scallop_lengths[i]))
-    # axs.set_xlim(0, 2*np.pi)
-    # for j in range(len(diam)):
-    #     GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
-    #     initial_z_idxs = np.array(Impact_Data[i][j, :, 8][Impact_Data[i][j, :, 7] != 0], dtype = int)
-    #     impact_x = Impact_Data[i][j, :, 1][Impact_Data[i][j, :, 7] != 0]
-    #     scallop_phase = 2*np.pi*(impact_x % l32)/l32
-    #     findColors = (np.log10(Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7] != 0]))/ColorMax
-    #     axs.scatter(scallop_phase, Initial_Conditions[i][j, initial_z_idxs, 1] , c = my_colors(findColors), s = 50 * GS)
-    # plt.fill_between(x0, z0/4, 0, alpha = 1, color = 'grey')
-    # plt.contourf(new_X, new_Z, w_water, alpha = 0.5, vmin = np.min(Impact_Data[i][j, :, 4][Impact_Data[i][j, :, 7] != 0]), vmax = np.max(Impact_Data[i][j, :, 4][Impact_Data[i][j, :, 7] != 0]), cmap='seismic', zorder = 0)
-    # fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
-    #                     wspace=0.4, hspace=0.1)
-    # plt.title('Particle impacts at each location by fall height on '+str(l32)+' cm Scallops')
-    # cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
-    # cb2_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
-    # norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-    # norm2 = colors.Normalize(vmin = np.min(Impact_Data[i][j, :, 4][Impact_Data[i][j, :, 7] != 0]), vmax = np.max(Impact_Data[i][j, :, 4][Impact_Data[i][j, :, 7] != 0]))
-    # plt.colorbar(cm.ScalarMappable(norm = norm, cmap='YlGn_r'), cax = cb_ax)
-    # plt.colorbar(cm.ScalarMappable(norm = norm2, cmap='seismic'), cax = cb2_ax)
-    # cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
-    # cb2_ax.set_ylabel('water velcoity (cm/s)')
-    # axs.set_xlabel('x (cm)')
-    # axs.set_ylabel('fall height (cm)')
-    # plt.show()   
+          ## impacts by scallop phase plot, scallop crest == 0, 2*pi
+        ### try radially (distance from center proportional to impact energy?)
+    fig = plt.figure()
+    axs = fig.add_subplot(111, projection = 'polar')
+    labels = 'crest', 'lee', 'trough', 'stoss'
+    theta = [0.126, 1.257, np.pi, 5.969]
+    GetMaxEnergies = Impact_Data[i][:, :, 7][Impact_Data[i][:, :, 7] != 0]
+    ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
+    ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
+    ColorMax = np.ceil(np.max(ColorNumbers))
+    my_colors = cm.get_cmap('Wistia', 256)
+    for j in range(len(diam)):
+        GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
+        initial_z_idxs = np.array(Impact_Data[i][j, :, 8][Impact_Data[i][j, :, 7] != 0], dtype = int)
+        fall_heights = Initial_Conditions[i][j, initial_z_idxs, 1]
+        impact_x = Impact_Data[i][j, :, 1][Impact_Data[i][j, :, 7] != 0]
+        scallop_phase = 2*np.pi*(impact_x % l32)/l32 + np.pi/2
+        findColors = (np.log10(Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7] != 0]))/ColorMax
+        axs.scatter(scallop_phase, fall_heights, c = my_colors(findColors), s = 50 * GS, zorder = 2)
+        # if  np.max(initial_z_idxs) > max_fh:
+        #     max_fh = np.max(initial_z_idxs)
+    axs.bar(theta, l32, width = theta, alpha = 0.5)
+    fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
+                        wspace=0.4, hspace=0.1)
+    plt.title('Particle impacts at each location on '+str(l32)+' cm Scallops')
+    plt.xticks([])
+    cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
+    norm = colors.Normalize(vmin = 0, vmax = ColorMax)
+    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='Wistia'), cax = cb_ax)
+    cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
+    axs.set_ylabel('fall height (cm)')
+    plt.show()   
     
