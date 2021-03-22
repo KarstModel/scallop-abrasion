@@ -89,9 +89,10 @@ for i in range(len(scallop_lengths)):
     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
     ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
     ColorMax = np.ceil(np.max(ColorNumbers))
-    my_colors = cm.get_cmap('YlGn_r', 256)
+    my_colors = cm.get_cmap('YlGn', 256)
     # axs.set_xlim(0, int(number_of_scallops[i]*scallop_lengths[i]))
     axs.set_xlim(0, 50)
+    axs.set_ylim(0, l32)
     for j in range(len(diam)):
         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
         initial_z_idxs = np.array(Impact_Data[i][j, :, 8][Impact_Data[i][j, :, 7] != 0], dtype = int)
@@ -99,18 +100,14 @@ for i in range(len(scallop_lengths)):
         findColors = (np.log10(Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7] != 0]))/ColorMax
         axs.scatter(impact_x, Initial_Conditions[i][j, initial_z_idxs, 1] , c = my_colors(findColors), s = 50 * GS)
     plt.fill_between(x0, z0/4, 0, alpha = 1, color = 'grey')
-    plt.contourf(new_X, new_Z, w_water, alpha = 0.5, vmin = -20, vmax = 20, cmap='seismic', zorder = 0)
     fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
                         wspace=0.4, hspace=0.1)
+    axs.axvspan(0, 50, facecolor='mediumblue', zorder = 0)
     plt.title('Particle impacts at each location by fall height on '+str(l32)+' cm Scallops')
     cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
-    cb2_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
     norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-    norm2 = colors.Normalize(vmin = -20, vmax = 20)
-    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='YlGn_r'), cax = cb_ax)
-    plt.colorbar(cm.ScalarMappable(norm = norm2, cmap='seismic'), cax = cb2_ax)
+    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='YlGn'), cax = cb_ax)
     cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
-    cb2_ax.set_ylabel('water velcoity (cm/s)')
     axs.set_xlabel('x (cm)')
     axs.set_ylabel('fall height (cm)')
     plt.show()
@@ -136,57 +133,56 @@ for i in range(len(scallop_lengths)):
     plt.fill_between(x, diss_min, diss_max, alpha = 0.4, color = 'gray', label = 'dissolutional range')
     plt.semilogx()
     #plt.legend(loc = 'upper left')
-    axs.set_xlim(.9,30)
     axs.set_title('Abrasion Rate Normalized by Number of Impacts on '+str(l32)+' cm Scallops')
     axs.set_xlabel('particle grainsize (mm)')
     axs.set_ylabel('abrasional erosion rate (mm/yr)')
     axs.grid(True, which = 'both', axis = 'both')
     plt.show()
     
-    # ####fitting velocity data to Dietrich settling curve--not owrking quite right
-    # rho_sediment = 2.65
-    # rho_fluid = 1
+    ####fitting velocity data to Dietrich settling curve--not owrking quite right
+    rho_sediment = 2.65
+    rho_fluid = 1
         
-    # fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    # g = 981 # cm*s^-2
-    # nu = 0.01307  # g*cm^-1*s^-1
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    g = 981 # cm*s^-2
+    nu = 0.01307  # g*cm^-1*s^-1
     
-    # for j in range(len(diam)):
-    #     not_nan_idx = np.where(~np.isnan(Impact_Data[i][j, :, 6]))
-    #     diameter_array = Impact_Data[i][j, :, 5][not_nan_idx]
-    #     VelocityAvg=Impact_Data[i][j, :, 6][not_nan_idx]
-    #     D_star = ((rho_sediment-rho_fluid)*g*(diameter_array)**3)/(rho_fluid*nu)
-    #     W_star = (rho_fluid*VelocityAvg**3)/((rho_sediment-rho_fluid)*g*nu)
-    #     W_star_Dietrich = (1.71 * 10**-4 * D_star**2)
-    #     axs.scatter(diameter_array*10, W_star, label = 'simulated impact velocity')
-    #     axs.plot(diameter_array*10, W_star_Dietrich, c = 'g', label = 'settling velocity (Dietrich, 1982)')
+    for j in range(len(diam)):
+        not_nan_idx = np.where(~np.isnan(Impact_Data[i][j, :, 6]))
+        diameter_array = Impact_Data[i][j, :, 5][not_nan_idx]
+        VelocityAvg=Impact_Data[i][j, :, 6][not_nan_idx]
+        D_star = ((rho_sediment-rho_fluid)*g*(diameter_array)**3)/(rho_fluid*nu)
+        W_star = (rho_fluid*VelocityAvg**3)/((rho_sediment-rho_fluid)*g*nu)
+        W_star_Dietrich = (1.71 * 10**-4 * D_star**2)
+        axs.scatter(diameter_array*10, W_star, label = 'simulated impact velocity')
+        axs.plot(diameter_array*10, W_star_Dietrich, c = 'g', label = 'settling velocity (Dietrich, 1982)')
         
-    #     def settling_velocity(D_star, r, s):
-    #         return r * D_star**s
+        def settling_velocity(D_star, r, s):
+            return r * D_star**s
         
-    #     pars, cov = curve_fit(f=settling_velocity, xdata=D_star, ydata=W_star, p0=[1.71 * 10**-4, 2], bounds=(-np.inf, np.inf))
-    #     # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
-    #     stdevs = np.sqrt(np.diag(cov))
-    #     # Calculate the residuals
-    #     res = W_star - settling_velocity(D_star, *pars)
-    #     axs.plot(diameter_array*10, settling_velocity(D_star, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with r= '+str(round(pars[0], 2))+' and s= '+str(round(pars[1], 2)))
+        pars, cov = curve_fit(f=settling_velocity, xdata=D_star, ydata=W_star, p0=[1.71 * 10**-4, 2], bounds=(-np.inf, np.inf))
+        # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
+        stdevs = np.sqrt(np.diag(cov))
+        # Calculate the residuals
+        res = W_star - settling_velocity(D_star, *pars)
+        axs.plot(diameter_array*10, settling_velocity(D_star, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with r= '+str(round(pars[0], 2))+' and s= '+str(round(pars[1], 2)))
     
-    # plt.legend()
-    # plt.semilogy()
-    # axs.set_xlabel('diameter (mm)')
-    # axs.set_ylabel('dimensionless settling velocity, Dstar') 
-    # axs.set_title('Particle velocities over '+str(l32)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
+    plt.legend()
+    plt.semilogy()
+    axs.set_xlabel('diameter (mm)')
+    axs.set_ylabel('dimensionless settling velocity, Dstar') 
+    axs.set_title('Particle velocities over '+str(l32)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
     
-    # plt.show()
+    plt.show()
     
-        ## impacts by scallop phase plot, scallop crest == 0, 2*pi
-        ### try linearly 
+        # impacts by scallop phase plot, scallop crest == 0, 2*pi
+        ## try linearly 
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     GetMaxEnergies = Impact_Data[i][:, :, 7][Impact_Data[i][:, :, 7] != 0]
     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
     ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
     ColorMax = np.ceil(np.max(ColorNumbers))
-    my_colors = cm.get_cmap('YlGn_r', 256)
+    my_colors = cm.get_cmap('YlGn', 256)
     axs.set_xlim(0, l32)
     for j in range(len(diam)):
         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
@@ -204,7 +200,7 @@ for i in range(len(scallop_lengths)):
     cb2_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
     norm = colors.Normalize(vmin = 0, vmax = ColorMax)
     norm2 = colors.Normalize(vmin = -20, vmax = 20)
-    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='YlGn_r'), cax = cb_ax)
+    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='YlGn'), cax = cb_ax)
     plt.colorbar(cm.ScalarMappable(norm = norm2, cmap='seismic'), cax = cb2_ax)
     cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
     cb2_ax.set_ylabel('vertical component of water velocity (cm/s)')
@@ -217,12 +213,14 @@ for i in range(len(scallop_lengths)):
     fig = plt.figure()
     axs = fig.add_subplot(111, projection = 'polar')
     labels = 'crest', 'lee', 'trough', 'stoss'
-    theta = [0.126, 1.257, np.pi, 5.969]
+    theta = [0.47*np.pi, 0.795*np.pi, 1.3*np.pi, 1.975*np.pi]
+    width = [0.14*np.pi, 0.51*np.pi, 0.5*np.pi, 0.85*np.pi]
+    c = 'lightsteelblue', 'slateblue', 'darkslateblue', 'steelblue'
     GetMaxEnergies = Impact_Data[i][:, :, 7][Impact_Data[i][:, :, 7] != 0]
     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
     ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
     ColorMax = np.ceil(np.max(ColorNumbers))
-    my_colors = cm.get_cmap('Wistia', 256)
+    my_colors = cm.get_cmap('YlGn', 256)
     for j in range(len(diam)):
         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
         initial_z_idxs = np.array(Impact_Data[i][j, :, 8][Impact_Data[i][j, :, 7] != 0], dtype = int)
@@ -230,18 +228,88 @@ for i in range(len(scallop_lengths)):
         impact_x = Impact_Data[i][j, :, 1][Impact_Data[i][j, :, 7] != 0]
         scallop_phase = 2*np.pi*(impact_x % l32)/l32 + np.pi/2
         findColors = (np.log10(Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7] != 0]))/ColorMax
-        axs.scatter(scallop_phase, fall_heights, c = my_colors(findColors), s = 50 * GS, zorder = 2)
-        # if  np.max(initial_z_idxs) > max_fh:
-        #     max_fh = np.max(initial_z_idxs)
-    axs.bar(theta, l32, width = theta, alpha = 0.5)
+        axs.scatter(scallop_phase, fall_heights, c = my_colors(findColors), zorder = 1)#, s = 50 * GS)
+    axs.bar(theta, l32, width = width, alpha = 0.5, color = c, zorder = 0)
     fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
                         wspace=0.4, hspace=0.1)
     plt.title('Particle impacts at each location on '+str(l32)+' cm Scallops')
     plt.xticks([])
     cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
     norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='Wistia'), cax = cb_ax)
+    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='YlGn'), cax = cb_ax)
     cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
-    axs.set_ylabel('fall height (cm)')
+    thisr, thistheta = scallop_lengths[i], theta[i]
+    axs.annotate(labels[0],
+                xy=(theta[0], l32),  # theta, radius
+                xytext=(0.425, 0.8),    # fraction, fraction
+                textcoords='figure fraction',
+                )
+    axs.annotate(labels[1],
+                xy=(theta[1], l32),  # theta, radius
+                xytext=(0.25, 0.7),    # fraction, fraction
+                textcoords='figure fraction',
+                )
+    axs.annotate(labels[2],
+                xy=(theta[2], l32),  # theta, radius
+                xytext=(0.25, 0.25),    # fraction, fraction
+                textcoords='figure fraction',
+                )
+    axs.annotate(labels[3],
+                xy=(theta[3], l32),  # theta, radius
+                xytext=(0.6, 0.4),    # fraction, fraction
+                textcoords='figure fraction',
+                )
+    axs.annotate('fall height (cm)',
+                xy=(theta[3], l32),
+                xytext=(0.65, 0.7),    # fraction, fraction
+                textcoords='figure fraction',
+)
     plt.show()   
     
+    ###reference scallop
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+labels = 'crest', 'lee', 'trough', 'stoss'
+axs.set_xlim(0, 2*np.pi)
+axs.set_ylim(0, 1.5)
+axs.set_aspect('equal')
+plt.fill_between(x0*2*np.pi/l32, z0/1.25, 0, alpha = 1, color = 'grey')
+axs.axvspan(0, 0.04*np.pi, facecolor='lightsteelblue', alpha = 0.5, zorder = 0)
+axs.axvspan(0.04*np.pi, 0.55*np.pi, facecolor='slateblue', alpha = 0.5, zorder = 0)
+axs.axvspan(0.55*np.pi, 1.05*np.pi, facecolor='darkslateblue', alpha = 0.5, zorder = 0)
+axs.axvspan(1.05*np.pi, 1.9*np.pi, facecolor='steelblue', alpha = 0.5, zorder = 0)
+axs.axvspan(1.9*np.pi, 2*np.pi, facecolor='lightsteelblue', alpha = 0.5, zorder = 0)
+axs.annotate(labels[0],
+            xy=(0.02*np.pi, 1.5),  # theta, radius
+            xytext=(0.01, 0.8),    # fraction, fraction
+            textcoords='axes fraction',
+            )
+axs.annotate(labels[1],
+            xy=(0.08*np.pi, 1.5),  # theta, radius
+            xytext=(0.11, 0.8),    # fraction, fraction
+            textcoords='axes fraction',
+            )
+axs.annotate(labels[2],
+            xy=(0.6*np.pi, 1.5),  # theta, radius
+            xytext=(0.35, 0.8),    # fraction, fraction
+            textcoords='axes fraction',
+            )
+axs.annotate(labels[3],
+            xy=(1.45*np.pi, 1.5),  # theta, radius
+            xytext=(0.725, 0.8),    # fraction, fraction
+            textcoords='axes fraction',
+            )
+axs.annotate(labels[0],
+            xy=(1.45*np.pi, 1.5),  # theta, radius
+            xytext=(0.96, 0.8),    # fraction, fraction
+            textcoords='axes fraction',
+            )
+axs.set_xlabel('distance along scallop (radians)')
+axs.set_ylabel('fraction of height to scallop crest') 
+plt.show()
+
+#pretty scalloped profile only
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+axs.set_xlim(0, 50)
+axs.set_ylim(-0.5, 2)
+axs.set_aspect('equal')
+plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey')
