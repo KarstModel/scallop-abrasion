@@ -576,18 +576,23 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         BOUNCED = False
         MOVING = True
         HIGH_WATER = False
-        z_init = (scallop_length*np.random.rand())    #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
+        z_init = (2*D*np.random.rand())    #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
         x_init = (scallop_length*np.random.rand())  #add probability distribution later
-        if z_init < crest_height:
-            z_init = crest_height + 0.05
-        elif z_init >= ((np.shape(w_water)[0])*0.05-0.05):
-            z_init = (np.shape(w_water)[0])*0.05 - 0.05
+        if z_init < crest_height + D/2:
+            z_init = crest_height + D/2
+        elif z_init >= 200:
+            z_init = 200
         if x_init < 0.05  or x_init >= ((np.shape(u_water)[1])*0.05-0.05):
             x_init = 0.05
         z_idx = np.rint(z_init/0.05)
         x_idx = np.rint(x_init/0.05)
-        u_init = u_water[int(z_idx), int(x_idx)]
-        w_init = w_water[int(z_idx), int(x_idx)]
+        if z_idx >= np.shape(w_water)[0]:
+                HIGH_WATER = True
+                u_init = u_w0
+                w_init = -0.01
+        else:
+            u_init = u_water[int(z_idx), int(x_idx)]
+            w_init = w_water[int(z_idx), int(x_idx)]
         location_data[i, time_step, :] = [t, x_init, z_init, u_init, w_init, D]
         initial_conditions[i, :] = [x_init, z_init, u_init, w_init, D]
         
