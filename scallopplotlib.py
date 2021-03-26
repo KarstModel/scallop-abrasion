@@ -42,8 +42,8 @@ def __init__(self):
 
 def trajectory_figures(scallop_length, number_of_scallops, diameter, grain_type, scallop_x, scallop_z, loc_data):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,4))    
-    #axs.set_aspect('equal')
-    #axs.set_xlim(0, 40)
+    axs.set_aspect('equal')
+    #axs.set_xlim(17, 28)
     axs.set_ylim(0,2)
     axs.plot (scallop_x, scallop_z, 'grey')
     ld = np.array(loc_data, dtype = object)
