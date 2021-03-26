@@ -45,9 +45,10 @@ plt.close('all')
 # ### user input: 
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
-l32 = 1 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 50  #number of grainsizes to simulate in diameter array
-numScal = int(np.rint(450*1.5**(-l32))) #number of scallops
+l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+n = 3  #number of grainsizes to simulate in diameter array
+numScal = 2
+#numScal = int(np.rint(450*1.5**(-l32))) #number of scallops
 numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
@@ -58,8 +59,9 @@ Re = 23300     #Reynold's number from scallop formation experiments (Blumberg an
 mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
 u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
 
-grain_diam_max = (2**-(-np.log2(5.525*(u_w0/100)**2)-3))/10 
+grain_diam_max = (2**(np.log2(0.00055249*u_w0**2)+3))/10 
 grain_diam_min = 0.0177
+
 max_time = 10  #seconds
 # if l32 == 2.5:
 #     max_time = 4
@@ -154,5 +156,5 @@ for D in diam:
 # # fig, axs = spl.abrasion_and_dissolution_plot_2(x0, diam, NormErosionAvg, l32)
 # # plt.show()
 
-fig, axs = spl.number_of_impacts_at_loc_plot(diam, x0, z0, l32, All_Impacts, All_Initial_Conditions, numScal)
-plt.show()
+# fig, axs = spl.number_of_impacts_at_loc_plot(diam, x0, z0, l32, All_Impacts, All_Initial_Conditions, numScal)
+# plt.show()
