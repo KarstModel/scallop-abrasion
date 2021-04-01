@@ -45,10 +45,10 @@ plt.close('all')
 # ### user input: 
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
-l32 = 10 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 3  #number of grainsizes to simulate in diameter array
-numScal = 2
+l32 = 2.5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+n = 29  #number of grainsizes to simulate in diameter array
 #numScal = int(np.rint(450*1.5**(-l32))) #number of scallops
+numScal = 800
 numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
@@ -62,9 +62,7 @@ u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream,
 grain_diam_max = (2**(np.log2(0.00055249*u_w0**2)+3))/10 
 grain_diam_min = 0.0177
 
-max_time = 10  #seconds
-# if l32 == 2.5:
-#     max_time = 4
+max_time = 50  #seconds
 # =============================================================================
 
 #build the bedrock scallop array
