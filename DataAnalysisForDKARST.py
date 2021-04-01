@@ -120,20 +120,20 @@ for i in range(len(scallop_lengths)):
     # axs.set_ylabel('fall height (cm)')
     # plt.show()
 
-######## set up for number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, x_array):
-    number_of_impacts=np.zeros_like(diam)
-    normalized_energies=np.zeros_like(diam)
-    for j in range(len(diam)):
-        GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
-        number_of_impacts[j] = len(GS)/(numScal*l32)
-        KE = Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7]!=0]
-        if np.any(KE):
-            normalized_energies[j] = np.average(KE)
-        else:
-            normalized_energies[j] = 0
-    all_impact_numbers[i, :] = number_of_impacts
-    all_grains[i, :] = diam
-    all_avg_energies[i, :] = normalized_energies
+# ######## set up for number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, x_array):
+#     number_of_impacts=np.zeros_like(diam)
+#     normalized_energies=np.zeros_like(diam)
+#     for j in range(len(diam)):
+#         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
+#         number_of_impacts[j] = len(GS)/(numScal*l32)
+#         KE = Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7]!=0]
+#         if np.any(KE):
+#             normalized_energies[j] = np.average(KE)
+#         else:
+#             normalized_energies[j] = 0
+#     all_impact_numbers[i, :] = number_of_impacts
+#     all_grains[i, :] = diam
+#     all_avg_energies[i, :] = normalized_energies
     
     # #####abrasion v dissolution 
     # # abrasion_and_dissolution_plot_2(x_array, diam, NormErosionAvg, scallop_length):
@@ -187,7 +187,7 @@ for i in range(len(scallop_lengths)):
     # mark_inset(axs, axins, loc1=2, loc2=1, fc="none", ec="0.5")
     # plt.show()
     
-    # ####fitting velocity data to Dietrich settling curve--not working quite right
+    # ####fitting velocity data to Dietrich settling curve--not working quite right, old version
     # rho_sediment = 2.65
     # rho_fluid = 1
         
@@ -222,6 +222,50 @@ for i in range(len(scallop_lengths)):
     # axs.set_title('Particle velocities over '+str(l32)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
     
     # plt.show()
+
+    ####fitting velocity data to Dietrich settling curve--not working quite right, reworking 2021-03-28
+    rho_sediment = 2.65
+    rho_fluid = 1
+        
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    g = 981 # cm*s^-2
+    nu = 0.01307  # g*cm^-1*s^-1
+    
+    D_star = np.zeros_like(diam)
+    W_star = np.zeros_like(diam)
+    
+    for j in range(len(diam)):
+        not_nan_idx = np.where(~np.isnan(Impact_Data[i][j, :, 6]))
+        diameter_array = np.average(Impact_Data[i][j, :, 5][not_nan_idx])
+        VelocityAvg = np.average(Impact_Data[i][j, :, 6][not_nan_idx])
+        D_star[j] = ((rho_sediment-rho_fluid)*g*(diameter_array)**3)/(rho_fluid*nu)
+        W_star[j] = -(rho_fluid*VelocityAvg**3)/((rho_sediment-rho_fluid)*g*nu)
+    W_star_Dietrich = (1.71 * 10**-4 * D_star**2)
+    axs.scatter(D_star, W_star, c = 'b', label = 'simulated impact velocity')
+#        axs.scatter(diameter_array*10, VelocityAvg)#, label = 'simulated impact velocity')
+
+    axs.scatter(D_star, W_star_Dietrich, c = 'r', label = 'settling velocity (Dietrich, 1982)')
+        
+    def settling_velocity(D_star, r, s):
+        return r * D_star**s
+    
+    pars, cov = curve_fit(f=settling_velocity, xdata=D_star, ydata=W_star, p0=[1.71 * 10**-4, 2], bounds=(-np.inf, np.inf))
+    # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
+    stdevs = np.sqrt(np.diag(cov))
+    # Calculate the residuals
+    res = W_star - settling_velocity(D_star, *pars)
+    axs.plot(D_star, settling_velocity(D_star, *pars), linestyle='--', linewidth=2, color='black', label = 'fit, r= '+str(round(pars[0], 10))+' and s= '+str(round(pars[1], 2)))
+        
+    plt.legend()
+    plt.semilogy()
+    #plt.semilogx()
+    axs.set_xlabel('dimensionless grain size, D*')
+    axs.set_ylabel('dimensionless settling velocity, W*') 
+    axs.set_title('Particle velocities over '+str(l32)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
+    
+    plt.show()
+
+
     
     #     # impacts by scallop phase plot, scallop crest == 0, 2*pi
     #     ## try linearly 
@@ -230,31 +274,65 @@ for i in range(len(scallop_lengths)):
     # ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
     # ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
     # ColorMax = np.ceil(np.max(ColorNumbers))
-    # my_colors = cm.get_cmap('YlGn', 256)
+    # my_colors = cm.get_cmap('winter_r', 256)
     # axs.set_xlim(0, l32)
+    # #axs.set_aspect('equal')
     # for j in range(len(diam)):
     #     GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
     #     initial_z_idxs = np.array(Impact_Data[i][j, :, 8][Impact_Data[i][j, :, 7] != 0], dtype = int)
     #     impact_x = Impact_Data[i][j, :, 1][Impact_Data[i][j, :, 7] != 0]
     #     scallop_phase = impact_x % l32
     #     findColors = (np.log10(Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7] != 0]))/ColorMax
-    #     axs.scatter(scallop_phase, Initial_Conditions[i][j, initial_z_idxs, 1] , c = my_colors(findColors), s = 50 * GS)
+    #     axs.scatter(scallop_phase, GS*10 , c = my_colors(findColors))
     # plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey')
-    # plt.contourf(new_X, new_Z, w_water, alpha = 1, vmin = -20, vmax = 20, cmap = 'seismic', zorder = 0)
+    # #plt.contourf(new_X, new_Z, w_water, alpha = 1, vmin = -20, vmax = 20, cmap = 'seismic', zorder = 0)
     # fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
     #                     wspace=0.4, hspace=0.1)
-    # plt.title('Particle impacts at each location by fall height on '+str(l32)+' cm Scallops')
+    # plt.title('Particle impacts by grain size on '+str(l32)+' cm scallops')
     # cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
-    # cb2_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
+    # #cb2_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
     # norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-    # norm2 = colors.Normalize(vmin = -20, vmax = 20)
-    # plt.colorbar(cm.ScalarMappable(norm = norm, cmap='YlGn'), cax = cb_ax)
-    # plt.colorbar(cm.ScalarMappable(norm = norm2, cmap='seismic'), cax = cb2_ax)
+    # #norm2 = colors.Normalize(vmin = -20, vmax = 20)
+    # plt.colorbar(cm.ScalarMappable(norm = norm, cmap='winter_r'), cax = cb_ax)
+    # #plt.colorbar(cm.ScalarMappable(norm = norm2, cmap='seismic'), cax = cb2_ax)
     # cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
-    # cb2_ax.set_ylabel('vertical component of water velocity (cm/s)')
+    # #cb2_ax.set_ylabel('vertical component of water velocity (cm/s)')
     # axs.set_xlabel('x (cm)')
-    # axs.set_ylabel('fall height (cm)')
+    # axs.set_ylabel('grain size (mm)')
+    
+    # if l32 == 1 or l32 == 2.5:
+    #         #select the x-range for the zoomed region
+    #     x1 = 0
+    #     x2 = l32
+        
+    #     # select y-range for zoomed region
+    #     y1 = 0
+    #     y2 = l32*5
+        
+    #     # Make the zoom-in plot:
+    #     axins = zoomed_inset_axes(axs, 2, bbox_to_anchor=(0,0), loc = 'upper left')
+    #     GetMaxEnergies = Impact_Data[i][:, :, 7][Impact_Data[i][:, :, 7] != 0]
+    #     ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
+    #     ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
+    #     ColorMax = np.ceil(np.max(ColorNumbers))
+    #     my_colors = cm.get_cmap('winter_r', 256)
+
+    #     for j in range(len(diam)):
+    #         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
+    #         initial_z_idxs = np.array(Impact_Data[i][j, :, 8][Impact_Data[i][j, :, 7] != 0], dtype = int)
+    #         impact_x = Impact_Data[i][j, :, 1][Impact_Data[i][j, :, 7] != 0]
+    #         scallop_phase = impact_x % l32
+    #         findColors = (np.log10(Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7] != 0]))/ColorMax
+    #         axins.scatter(scallop_phase, GS*10 , c = my_colors(findColors))
+    #     axins.set_xlim(x1, x2)
+    #     axins.set_ylim(y1, y2)
+    #     axins.set_title('impacts by grains with D < 0.5*scallop length')
+    #     axins.grid(True, which = 'both', axis = 'both')
+    #     plt.xticks(visible=True)
+    #     plt.yticks(visible=True)
+    #     mark_inset(axs, axins, loc1=2, loc2=1, fc="none", ec="0.5")
     # plt.show()
+
 
 #           ## impacts by scallop phase plot, scallop crest == 0, 2*pi
 #         ### try radially (distance from center proportional to impact energy?)
@@ -361,15 +439,15 @@ for i in range(len(scallop_lengths)):
 # axs.set_aspect('equal')
 # plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey')
 
-######## number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, x_array):
+# ######## number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, x_array):
 
-fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-for i in range(len(scallop_lengths)):
-    axs.scatter(all_avg_energies[i, :], all_impact_numbers[i, :], label = 'impacts on '+str(scallop_lengths[i])+' cm scallop')
-plt.title('Number of particle impacts on scallops per cm of streambed length')
-axs.set_xlabel('avg KE')
-axs.set_ylabel('number of impacts')
-plt.legend()
-plt.semilogx()
-axs.grid(True, which = 'both', axis = 'x')
-plt.show()
+# fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+# for i in range(len(scallop_lengths)):
+#     axs.scatter(all_avg_energies[i, :], all_impact_numbers[i, :], label = 'impacts on '+str(scallop_lengths[i])+' cm scallop')
+# plt.title('Number of particle impacts on scallops per cm of streambed length')
+# axs.set_xlabel('avg KE')
+# axs.set_ylabel('number of impacts')
+# plt.legend()
+# plt.semilogx()
+# axs.grid(True, which = 'both', axis = 'x')
+# plt.show()
