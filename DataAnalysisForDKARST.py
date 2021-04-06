@@ -15,10 +15,10 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
-Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-03-24.npy')
-Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-03-23.npy')
-Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-03-23.npy')
-Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-03-24.npy')
+Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-04-02.npy')
+Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-04-03.npy')
+Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-04-02.npy')
+Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-02.npy')
 # =============================================================================
 # Form of Initial Conditions array:
 #   initial conditions saved for each particle in simulation      
@@ -28,10 +28,10 @@ Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-03-24.
 #           0 = x, 1 = z, 2 = u, 3 = w, D = particle diameter 
 # =============================================================================
     
-Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-03-24.npy')
-Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-03-23.npy')
-Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-03-23.npy')
-Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-03-24.npy')
+Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-04-02.npy')
+Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-04-03.npy')
+Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-04-02.npy')
+Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-02.npy')
 # =============================================================================
 # Form of Impact Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -42,6 +42,19 @@ Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-03-24.npy')
 #               links to numPartkl in Initial Conditions array
 # =============================================================================
 
+Deposition_Data1 = np.load('outputs\Deposits-1turbulent2021-04-02.npy')
+Deposition_Data2 = np.load('outputs\Deposits-2.5turbulent2021-04-03.npy')
+Deposition_Data5 = np.load('outputs\Deposits-5turbulent2021-04-02.npy')
+Deposition_Data10 = np.load('outputs\Deposits-10turbulent2021-04-02.npy')
+# =============================================================================
+# Form of Deposit Data array:
+#   data collected every time a particle impacts the bedrock surface
+#       shape = (n, 100000, 5)
+#           n = number of grain sizes in diameter array
+#           100000 pre-allocated to be greater than number of time-steps
+#           0 = time, 1 = x, 2 = z, 3 = D, 4 = particle ID,
+#               links to numPartkl in Initial Conditions array
+# =============================================================================
 B = 8.82*10**-12  # s**2·cm**-2,  abrasion coefficient (Bosch and Ward, 2021)
 
 scallop_lengths = [1, 2.5, 5, 10]
@@ -52,6 +65,7 @@ number_of_scallops[2] = 40
 number_of_scallops[3] = np.rint(450*1.5**(-scallop_lengths[3]))
 Impact_Data = [Impact_Data1, Impact_Data2, Impact_Data5, Impact_Data10]
 Initial_Conditions = [Initial_Conditions1, Initial_Conditions2, Initial_Conditions5, Initial_Conditions10]
+Deposition_Data = [Deposition_Data1, Deposition_Data2, Deposition_Data5, Deposition_Data10]
 x_stretch = [8000, 8000, 1600, 400]
 all_grains = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))
 all_impact_numbers = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))                      
@@ -187,83 +201,48 @@ for i in range(len(scallop_lengths)):
     # mark_inset(axs, axins, loc1=2, loc2=1, fc="none", ec="0.5")
     # plt.show()
     
-    # ####fitting velocity data to Dietrich settling curve--not working quite right, old version
-    # rho_sediment = 2.65
-    # rho_fluid = 1
-        
-    # fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    # g = 981 # cm*s^-2
-    # nu = 0.01307  # g*cm^-1*s^-1
-    
-    # for j in range(len(diam)):
-    #     not_nan_idx = np.where(~np.isnan(Impact_Data[i][j, :, 6]))
-    #     diameter_array = Impact_Data[i][j, :, 5][not_nan_idx]
-    #     VelocityAvg=Impact_Data[i][j, :, 6][not_nan_idx]
-    #     D_star = ((rho_sediment-rho_fluid)*g*(diameter_array)**3)/(rho_fluid*nu)
-    #     W_star = (rho_fluid*VelocityAvg**3)/((rho_sediment-rho_fluid)*g*nu)
-    #     W_star_Dietrich = (1.71 * 10**-4 * D_star**2)
-    #     axs.scatter(diameter_array*10, W_star, label = 'simulated impact velocity')
-    #     axs.plot(diameter_array*10, W_star_Dietrich, c = 'g', label = 'settling velocity (Dietrich, 1982)')
-        
-    #     def settling_velocity(D_star, r, s):
-    #         return r * D_star**s
-        
-    #     pars, cov = curve_fit(f=settling_velocity, xdata=D_star, ydata=W_star, p0=[1.71 * 10**-4, 2], bounds=(-np.inf, np.inf))
-    #     # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
-    #     stdevs = np.sqrt(np.diag(cov))
-    #     # Calculate the residuals
-    #     res = W_star - settling_velocity(D_star, *pars)
-    #     axs.plot(diameter_array*10, settling_velocity(D_star, *pars), linestyle='--', linewidth=2, color='black', label = 'fitted to Equation (13), with r= '+str(round(pars[0], 2))+' and s= '+str(round(pars[1], 2)))
-    
-    # plt.legend()
-    # plt.semilogy()
-    # axs.set_xlabel('diameter (mm)')
-    # axs.set_ylabel('dimensionless settling velocity, Dstar') 
-    # axs.set_title('Particle velocities over '+str(l32)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
-    
-    # plt.show()
 
-    ####fitting velocity data to Dietrich settling curve--not working quite right, reworking 2021-03-28
-    rho_sediment = 2.65
-    rho_fluid = 1
+#     ####fitting velocity data to Dietrich settling curve
+#     rho_sediment = 2.65
+#     rho_fluid = 1
         
-    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    g = 981 # cm*s^-2
-    nu = 0.01307  # g*cm^-1*s^-1
+#     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+#     g = 981 # cm*s^-2
+#     nu = 0.01307  # g*cm^-1*s^-1
     
-    D_star = np.zeros_like(diam)
-    W_star = np.zeros_like(diam)
+#     D_star = np.zeros_like(diam)
+#     W_star = np.zeros_like(diam)
     
-    for j in range(len(diam)):
-        not_nan_idx = np.where(~np.isnan(Impact_Data[i][j, :, 6]))
-        diameter_array = np.average(Impact_Data[i][j, :, 5][not_nan_idx])
-        VelocityAvg = np.average(Impact_Data[i][j, :, 6][not_nan_idx])
-        D_star[j] = ((rho_sediment-rho_fluid)*g*(diameter_array)**3)/(rho_fluid*nu)
-        W_star[j] = -(rho_fluid*VelocityAvg**3)/((rho_sediment-rho_fluid)*g*nu)
-    W_star_Dietrich = (1.71 * 10**-4 * D_star**2)
-    axs.scatter(D_star, W_star, c = 'b', label = 'simulated impact velocity')
-#        axs.scatter(diameter_array*10, VelocityAvg)#, label = 'simulated impact velocity')
+#     for j in range(len(diam)):
+#         not_nan_idx = np.where(~np.isnan(Impact_Data[i][j, :, 6]))
+#         diameter_array = np.average(Impact_Data[i][j, :, 5][not_nan_idx])
+#         VelocityAvg = np.average(Impact_Data[i][j, :, 6][not_nan_idx])
+#         D_star[j] = ((rho_sediment-rho_fluid)*g*(diameter_array)**3)/(rho_fluid*nu)
+#         W_star[j] = -(rho_fluid*VelocityAvg**3)/((rho_sediment-rho_fluid)*g*nu)
+#     W_star_Dietrich = (1.71 * 10**-4 * D_star**2)
+#     axs.scatter(D_star, W_star, c = 'b', label = 'simulated impact velocity')
+# #        axs.scatter(diameter_array*10, VelocityAvg)#, label = 'simulated impact velocity')
 
-    axs.scatter(D_star, W_star_Dietrich, c = 'r', label = 'settling velocity (Dietrich, 1982)')
+#     axs.scatter(D_star, W_star_Dietrich, c = 'r', label = 'settling velocity (Dietrich, 1982)')
         
-    def settling_velocity(D_star, r, s):
-        return r * D_star**s
+#     def settling_velocity(D_star, r, s):
+#         return r * D_star**s
     
-    pars, cov = curve_fit(f=settling_velocity, xdata=D_star, ydata=W_star, p0=[1.71 * 10**-4, 2], bounds=(-np.inf, np.inf))
-    # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
-    stdevs = np.sqrt(np.diag(cov))
-    # Calculate the residuals
-    res = W_star - settling_velocity(D_star, *pars)
-    axs.plot(D_star, settling_velocity(D_star, *pars), linestyle='--', linewidth=2, color='black', label = 'fit, r= '+str(round(pars[0], 10))+' and s= '+str(round(pars[1], 2)))
+#     pars, cov = curve_fit(f=settling_velocity, xdata=D_star, ydata=W_star, p0=[1.71 * 10**-4, 2], bounds=(-np.inf, np.inf))
+#     # Get the standard deviations of the parameters (square roots of the # diagonal of the covariance)
+#     stdevs = np.sqrt(np.diag(cov))
+#     # Calculate the residuals
+#     res = W_star - settling_velocity(D_star, *pars)
+#     axs.plot(D_star, settling_velocity(D_star, *pars), linestyle='--', linewidth=2, color='black', label = 'fit, r= '+str(round(pars[0], 10))+' and s= '+str(round(pars[1], 2)))
         
-    plt.legend()
-    plt.semilogy()
-    #plt.semilogx()
-    axs.set_xlabel('dimensionless grain size, D*')
-    axs.set_ylabel('dimensionless settling velocity, W*') 
-    axs.set_title('Particle velocities over '+str(l32)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
+#     plt.legend()
+#     plt.semilogy()
+#     #plt.semilogx()
+#     axs.set_xlabel('dimensionless grain size, D*')
+#     axs.set_ylabel('dimensionless settling velocity, W*') 
+#     axs.set_title('Particle velocities over '+str(l32)+' cm scallops, fit to Settling Velocity of Natural Particles (Dietrich, 1982)')
     
-    plt.show()
+#     plt.show()
 
 
     
@@ -332,6 +311,26 @@ for i in range(len(scallop_lengths)):
     #     plt.yticks(visible=True)
     #     mark_inset(axs, axins, loc1=2, loc2=1, fc="none", ec="0.5")
     # plt.show()
+
+        # deposition by scallop phase plot, scallop crest == 0, 2*pi
+        ## try linearly 
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    axs.set_xlim(0, l32)
+    #axs.set_aspect('equal')
+    for j in range(len(diam)):
+        GS_dep = Deposition_Data[i][j, :, 3][Deposition_Data[i][j, :, 3] > 0]
+        deposit_x = Deposition_Data[i][j, :, 1][Deposition_Data[i][j, :, 3] > 0]
+        scallop_phase = deposit_x % l32
+        axs.scatter(scallop_phase, GS_dep*10)
+    plt.fill_between(x0, z0, 0, alpha = 1, color = 'grey')
+    #plt.contourf(new_X, new_Z, w_water, alpha = 1, vmin = -20, vmax = 20, cmap = 'seismic', zorder = 0)
+    fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
+                        wspace=0.4, hspace=0.1)
+    plt.title('Particle deposits by grain size on '+str(l32)+' cm scallops')
+    cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
+    axs.set_xlabel('x (cm)')
+    axs.set_ylabel('grain size (mm)')
+    plt.show()
 
 
 #           ## impacts by scallop phase plot, scallop crest == 0, 2*pi
