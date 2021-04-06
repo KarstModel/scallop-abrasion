@@ -529,6 +529,15 @@ def seperate_impact_locations_plot(EnergyAtImpact, diameter_array, x_array, scal
     
     return fig, axs
 
+def travel_distance(All_Distances, diameter_array, scallop_length):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    for i in range(len(diameter_array)):
+        avg_distance = np.average(All_Distances[i, :, 0])
+        axs.scatter(diameter_array[i]*10, avg_distance)
+    axs.set_ylabel('average travel distance (cm)') 
+    axs.set_title('Average distance traveled by grain size over '+str(scallop_length)+' cm-long scallops')
+    axs.set_xlabel('grain size (mm)')
+    return fig, axs
     
 
 if __name__ == "__main__":
