@@ -45,10 +45,9 @@ plt.close('all')
 # ### user input: 
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
-l32 = 2.5 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 29  #number of grainsizes to simulate in diameter array
-#numScal = int(np.rint(450*1.5**(-l32))) #number of scallops
-numScal = 800
+l32 = 1 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
+n = 10  #number of grainsizes to simulate in diameter array
+numScal = int(np.rint(450*1.5**(-l32))) #number of scallops
 numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
@@ -62,7 +61,7 @@ u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream,
 grain_diam_max = (2**(np.log2(0.00055249*u_w0**2)+3))/10 
 grain_diam_min = 0.0177
 
-max_time = 50  #seconds
+max_time = 20  #seconds
 # =============================================================================
 
 #build the bedrock scallop array
@@ -97,6 +96,8 @@ elif flow_regime == 'turbulent':
 diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, n)
 All_Initial_Conditions = np.zeros(shape = (n, numPrtkl, 5))
 All_Impacts = np.zeros(shape = (n, 500000, 9))
+All_Deposits = np.zeros(shape = (n, 500000, 5))
+All_Distances = np.zeros(shape = (n, numPrtkl, 1))
 
 # loop over diameter array to run the saltation function for each grainsize
 i = 0
@@ -121,10 +122,11 @@ for D in diam:
 
     # In[10]:
     
-    impact_data, loc_data, init_con= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, dx, theta2, mu_water, cH, l32, numPrtkl, max_time)
+    deposition_data, impact_data, loc_data, init_con, distance_traveled= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, dx, theta2, mu_water, cH, l32, numPrtkl, max_time)
     
     All_Initial_Conditions[i, :, :] = init_con
     All_Impacts[i, :len(impact_data), :] = impact_data
+    All_Distances[i, :len(distance_traveled), :] = distance_traveled
     
     print('diam = ' + str(diam[i]) + ' cm')
     i += 1
@@ -133,14 +135,13 @@ for D in diam:
         fig, axs = spl.trajectory_figures(l32, numScal, D, grain, x0, z0, loc_data)
         plt.show()
 
-# # ####save all data
-# import datetime
-# now = datetime.datetime.now()
-# time_stamp = now.strftime('%Y-%m-%d')
-# np.save(join(outfolder,'Impacts-'+str(l32)+flow_regime+time_stamp), All_Impacts)
-# np.save(join(outfolder,'InitialConditions-'+str(l32)+flow_regime+time_stamp), All_Initial_Conditions)
-
-
+# ####save all data
+import datetime
+now = datetime.datetime.now()
+time_stamp = now.strftime('%Y-%m-%d')
+np.save(join(outfolder,'Impacts-'+str(l32)+flow_regime+time_stamp), All_Impacts)
+np.save(join(outfolder,'InitialConditions-'+str(l32)+flow_regime+time_stamp), All_Initial_Conditions)
+np.save(join(outfolder,'TravelDistances-'+str(l32)+flow_regime+time_stamp), All_Distances)
 
 
 
@@ -156,3 +157,6 @@ for D in diam:
 
 # fig, axs = spl.number_of_impacts_at_loc_plot(diam, x0, z0, l32, All_Impacts, All_Initial_Conditions, numScal)
 # plt.show()
+
+fig, axs = spl.travel_distance(All_Distances, diam, l32)
+plt.show()
