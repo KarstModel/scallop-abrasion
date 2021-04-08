@@ -46,8 +46,8 @@ plt.close('all')
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
 l32 = 1 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 10  #number of grainsizes to simulate in diameter array
-numScal = int(np.rint(450*1.5**(-l32))) #number of scallops
+n = 20  #number of grainsizes to simulate in diameter array
+numScal = int(400/l32) #number of scallops
 numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
@@ -70,7 +70,7 @@ dx0 = dx/l32
 xScal = np.arange(0, numScal+dx0,dx0)  #x-array for scallop field
 uScal = np.arange(0,1+dx0,dx0)  #x-array for a single scallop
 
-x0, z0 = da.scallop_array(xScal, uScal, numScal, l32)   #initial scallop profile, dimensions in centimeters
+x0, z0 = da.scallop_array(xScal, uScal, int(numScal), l32)   #initial scallop profile, dimensions in centimeters
 z0 = z0 - np.min(z0)
 dzdx = np.gradient(z0, x0)
 theta2 = np.arctan(dzdx)  #slope angle at each point along scalloped profile
