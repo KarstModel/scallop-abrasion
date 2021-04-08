@@ -566,6 +566,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     location_length = np.rint(max_time/dt2)
     location_data = np.zeros(shape=(number_of_particles, int(location_length + 1), 6))    # number_of_particles * 1001 time steps * 0 = t, 1 = x, 2 = z, 3 = u, 4 = w, 5 = diameter
     impact_data = np.zeros(shape=(int(location_length), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE, 8 = particle ID; one row per time step
+    deposition_data = np.zeros(shape=(int(location_length), 5)) # 0 = time, 1=x, 2=z, 3=D, 4=particle ID
+    distance_traveled = np.zeros(shape=(number_of_particles, 1))
     # define machine epsilon threshold
     eps2=10*np.sqrt( u_w0*np.finfo(float).eps )
 
@@ -576,13 +578,13 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         BOUNCED = False
         MOVING = True
         HIGH_WATER = False
-        z_init = (2*D*np.random.rand())    #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4
-        x_init = (scallop_length*np.random.rand())  #add probability distribution later
+        z_init = (20*np.random.rand())    #### bedload thickness from Wilson, 1987, factor multiplying D ranges from 0.5 to 4--- not anymore
+        x_init = (scallop_length*3*np.random.rand())  #add probability distribution later
         if z_init < crest_height + D/2:
             z_init = crest_height + D/2
         elif z_init >= 200:
             z_init = 200
-        if x_init < 0.05  or x_init >= ((np.shape(u_water)[1])*0.05-0.05):
+        if x_init < 0.05  or x_init >= 199:
             x_init = 0.05
         z_idx = np.rint(z_init/0.05)
         x_idx = np.rint(x_init/0.05)
@@ -713,10 +715,13 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
 
             location_data[i,time_step, :] = [t, pi_x, pi_z, pi_u, pi_w, D]
             #print('x',pi_x,'z',pi_z,'u',pi_u,'w',pi_w)
+            distance_traveled[i] = distance_traveled[i] + np.sqrt((location_data[i,time_step, 1] - location_data[i,time_step-1, 1])**2 + (location_data[i,time_step, 2] - location_data[i,time_step-1, 2])**2) 
             
             if pi_u == 0 and pi_w == 0:
                 MOVING = False
-                # grain is stuck
+                deposition_data[time_step, :3] = location_data[i,time_step, :3]
+                deposition_data[time_step, 3] = location_data[i, time_step, 5]
+                deposition_data[time_step, 4] = i    #particle identifier to link to initial conditions
                 break
             
             # projected next 
@@ -769,7 +774,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         
 
         
-    return impact_data, location_data, initial_conditions
+    return deposition_data, impact_data, location_data, initial_conditions, distance_traveled
        
 
 if __name__ == "__main__":
