@@ -15,10 +15,10 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
-Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-04-07.npy')
-Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-04-07.npy')
-Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-04-07.npy')
-Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-07.npy')
+Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-04-15.npy')
+Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-04-15.npy')
+Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-04-15.npy')
+Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-15.npy')
 # =============================================================================
 # Form of Initial Conditions array:
 #   initial conditions saved for each particle in simulation      
@@ -28,10 +28,10 @@ Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-07.
 #           0 = x, 1 = z, 2 = u, 3 = w, D = particle diameter 
 # =============================================================================
     
-Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-04-07.npy')
-Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-04-07.npy')
-Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-04-07.npy')
-Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-07.npy')
+Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-04-15.npy')
+Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-04-15.npy')
+Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-04-15.npy')
+Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-15.npy')
 # =============================================================================
 # Form of Impact Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -39,23 +39,17 @@ Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-07.npy')
 #           n = number of grain sizes in diameter array
 #           100000 pre-allocated to be greater than number of time-steps
 #           0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE, 8 = particle ID,
-#               links to numPartkl in Initial Conditions array
+#               links to numPartkl in Initial Conditions array, 9 = cumulative erosion
 # =============================================================================
 
-Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-04-07.npy')
-Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-04-07.npy')
-Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-04-07.npy')
-Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-04-07.npy')
+Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-04-15.npy')
+Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-04-15.npy')
+Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-04-15.npy')
+Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-04-15.npy')
 # =============================================================================
 # Form of Deposit Data array:
 #   data collected every time a particle impacts the bedrock surface
-#       shape = (n, 100000, 5)
-#           n = number of grain sizes in diameter array
-#           100000 pre-allocated to be greater than number of time-steps
-#           0 = time, 1 = x, 2 = z, 3 = D, 4 = particle ID,
-#               links to numPartkl in Initial Conditions array
 # =============================================================================
-B = 8.82*10**-12  # s**2·cm**-2,  abrasion coefficient (Bosch and Ward, 2021)
 
 scallop_lengths = [1, 2.5, 5, 10]
 number_of_scallops= [400/scallop_lengths[0], 400/scallop_lengths[1], 400/scallop_lengths[2], 400/scallop_lengths[3]]
@@ -66,7 +60,7 @@ x_stretch = [8000, 8000, 1600, 400]
 all_grains = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))
 all_impact_numbers = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))                      
 all_avg_energies = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))                      
-
+all_avg_distances = np.zeros(shape = (len(scallop_lengths), len(Deposition_Data1)))
 
 for i in range(len(scallop_lengths)):
     
@@ -98,6 +92,8 @@ for i in range(len(scallop_lengths)):
     mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
     u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
     grain_diam_max = (2**-(-np.log2(5.525*(u_w0/100)**2)-3))/10 
+    if grain_diam_max > 10:
+        grain_diam_max = 10
     grain_diam_min = 0.05
     diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, int(n))
     
@@ -133,68 +129,79 @@ for i in range(len(scallop_lengths)):
 ######## set up for number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, x_array):
     number_of_impacts=np.zeros_like(diam)
     normalized_energies=np.zeros_like(diam)
+    averaged_travel_dist=np.zeros_like(diam)
     for j in range(len(diam)):
         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
         number_of_impacts[j] = len(GS)/(numScal*l32)
         KE = Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7]!=0]
+        S = Deposition_Data[i][j, :, 0][Deposition_Data[i][j, :, 0]!=0]
         if np.any(KE):
             normalized_energies[j] = np.average(KE)
         else:
             normalized_energies[j] = 0
+        if np.any(S):
+            averaged_travel_dist[j] = np.average(S)
+        else:
+            averaged_travel_dist[j] = 0
+        
     all_impact_numbers[i, :] = number_of_impacts
     all_grains[i, :] = diam
     all_avg_energies[i, :] = normalized_energies
+    all_avg_distances[i, :] = averaged_travel_dist
     
     #####abrasion v dissolution 
     # abrasion_and_dissolution_plot_2(x_array, diam, NormErosionAvg, scallop_length):
-    cb_max = 0.02
-    cb_tiny = 4 * 10**-5
-    cb_old = 0.01
-    cb = np.linspace(cb_tiny, cb_max, 5)
+    #cb_max = 0.02
+    # cb_max = 1
+    # cb_tiny = 4 * 10**-5
+    # cb_old = 0.01
+    # cb = np.linspace(cb_tiny, cb_max, 5)
     
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
     for j in range(len(diam)):
-        for k in range(len(cb)):
+        #for k in range(len(cb)):
             GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 6] < 0]
-            Abrasion_Rate = -B * cb[k]/cb_old * (Impact_Data[i][j, :, 6][Impact_Data[i][j, :, 6] < 0])**3 *315576000 #  mm * s / (cm * yr)
+            total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
+            Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
             Normalized_Abrasion_Rate = Abrasion_Rate/((Abrasion_Rate > 0).sum())
             axs.scatter((GS*10), (Normalized_Abrasion_Rate))#, label = 'bedload concentration = '+str(round(cb[k], 5)))
     axs.set_xlim(0.1, grain_diam_max*10)
-    diss_min = 5.66* 5 / l32   #minimum dissolution rate (mm/yr) (Grm et al., 2017)
-    diss_max = 12.175* 5 / l32  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
+    diss_min = (1.735*5*10**-8) / l32   #minimum dissolution rate (mm/yr) (Grm et al., 2017)
+    diss_max = (4*5*10**-8) / l32  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
     x = np.linspace(0.1, grain_diam_max*10)
     plt.fill_between(x, diss_min, diss_max, alpha = 0.4, color = 'gray', label = 'dissolutional range')
     plt.semilogx()
     plt.legend(loc = 'upper left')
     axs.set_title('Abrasion Rate Normalized by Number of Impacts on '+str(l32)+' cm Scallops')
     axs.set_xlabel('particle grainsize (mm)')
-    axs.set_ylabel('abrasional erosion rate (mm/yr)')
+    axs.set_ylabel('abrasional erosion rate (cm/s)')
     axs.grid(True, which = 'both', axis = 'both')
     
-    #select the x-range for the zoomed region
-    x1 = 0.1
-    x2 = np.min([l32*5, grain_diam_max*10])
+    # #select the x-range for the zoomed region
+    # x1 = 0.1
+    # x2 = np.min([l32*5, grain_diam_max*10])
     
-    # select y-range for zoomed region
-    y1 = 0
-    y2 = diss_max
+    # # select y-range for zoomed region
+    # y1 = 0
+    # y2 = diss_max
     
     # Make the zoom-in plot:
-    axins = zoomed_inset_axes(axs, 3.5, bbox_to_anchor=(0,0), loc = 'upper left')
-    for j in range(len(diam)):
-        for k in range(len(cb)):
-            GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 6] < 0]
-            Abrasion_Rate = -B * cb[k]/cb_old * (Impact_Data[i][j, :, 6][Impact_Data[i][j, :, 6] < 0])**3 *315576000 #  mm * s / (cm * yr)
-            Normalized_Abrasion_Rate = Abrasion_Rate/((Abrasion_Rate > 0).sum())
-            axins.scatter((GS*10), (Normalized_Abrasion_Rate), s= 50)#, label = 'bedload concentration = '+str(round(cb[k], 5)))
-    axins.fill_between(x, diss_min, diss_max, alpha = 0.6, color = 'r', label = 'dissolutional range')
-    axins.set_xlim(x1, x2)
-    axins.set_ylim(y1, y2)
-    axins.grid(True, which = 'both', axis = 'both')
-    plt.xticks(visible=True)
-    plt.yticks(visible=True)
-    axins.legend(loc = 'upper center')
-    mark_inset(axs, axins, loc1=2, loc2=1, fc="none", ec="0.5")
+    # axins = zoomed_inset_axes(axs, 3.5, bbox_to_anchor=(0,0), loc = 'upper left')
+    # for j in range(len(diam)):
+    #     for k in range(len(cb)):
+    #         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 6] < 0]
+    #         Abrasion_Rate = -B * cb[k]/cb_old * (Impact_Data[i][j, :, 6][Impact_Data[i][j, :, 6] < 0])**3 *315576000 #  mm * s / (cm * yr)
+    #         Normalized_Abrasion_Rate = Abrasion_Rate/((Abrasion_Rate > 0).sum())
+    #         axins.scatter((GS*10), (Normalized_Abrasion_Rate), s= 50)#, label = 'bedload concentration = '+str(round(cb[k], 5)))
+    # axins.fill_between(x, diss_min, diss_max, alpha = 0.6, color = 'r', label = 'dissolutional range')
+    # axins.set_xlim(x1, x2)
+    # axins.set_ylim(y1, y2)
+    # axins.grid(True, which = 'both', axis = 'both')
+    # plt.xticks(visible=True)
+    # plt.yticks(visible=True)
+    # axins.legend(loc = 'upper center')
+    # mark_inset(axs, axins, loc1=2, loc2=1, fc="none", ec="0.5")
+    
     plt.show()
     
 
@@ -441,6 +448,29 @@ for i in range(len(scallop_lengths)):
     axs.scatter(all_avg_energies[i, :], all_impact_numbers[i, :], label = 'impacts on '+str(scallop_lengths[i])+' cm scallop')
 plt.title('Number of particle impacts on scallops per cm of streambed length')
 axs.set_xlabel('avg KE')
+axs.set_ylabel('number of impacts')
+plt.legend()
+plt.semilogx()
+axs.grid(True, which = 'both', axis = 'x')
+plt.show()
+
+#def travel_distance(All_Distances, diameter_array, scallop_length):
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+for i in range(len(scallop_lengths)):
+    
+    axs.scatter(all_grains[i, :]*10, all_avg_distances[i, :], label = str(scallop_lengths[i])+' cm scallop')
+plt.semilogy()
+plt.semilogx()
+axs.set_ylabel('average travel distance (cm)') 
+axs.set_title('Average distance traveled by grain size over scallops')
+axs.set_xlabel('grain size (mm)')
+plt.show()
+
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+for i in range(len(scallop_lengths)):
+    axs.scatter(all_grains[i, :]*10, all_impact_numbers[i, :], label = 'impacts on '+str(scallop_lengths[i])+' cm scallop')
+plt.title('Number of particle impacts on scallops per cm of streambed length')
+axs.set_xlabel('grain size (mm)')
 axs.set_ylabel('number of impacts')
 plt.legend()
 plt.semilogx()
