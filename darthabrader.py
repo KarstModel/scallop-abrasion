@@ -556,17 +556,21 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
+    Y = 3.2 * 10**11
+    sigma_T = 5.38 * 10**7
+    k_v = 10**6
     g = -981
     m = np.pi * rho_s * D**3 / 6
     longest_time = 0
+    
+    E_i_coef = (2 * Y * rho_s)/(3 * k_v * sigma_T**2)
 
     initial_conditions = np.zeros(shape=(number_of_particles, 5))  # 0 = x, 1 = z, 2 = u, 3 = w, 4 = D
     dt = dx / u_w0
     dt2=dt/4
     location_length = np.rint(max_time/dt2)
     location_data = np.zeros(shape=(number_of_particles, int(location_length + 1), 6))    # number_of_particles * 1001 time steps * 0 = t, 1 = x, 2 = z, 3 = u, 4 = w, 5 = diameter
-    impact_data = np.zeros(shape=(int(location_length), 9))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE, 8 = particle ID; one row per time step
-    deposition_data = np.zeros(shape=(int(location_length), 5)) # 0 = time, 1=x, 2=z, 3=D, 4=particle ID
+    impact_data = np.zeros(shape=(int(location_length), 10))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE, 8 = particle ID, 9 = erosion by one impact; one row per time step
     distance_traveled = np.zeros(shape=(number_of_particles, 1))
     # define machine epsilon threshold
     eps2=10*np.sqrt( u_w0*np.finfo(float).eps )
@@ -719,9 +723,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             
             if pi_u == 0 and pi_w == 0:
                 MOVING = False
-                deposition_data[time_step, :3] = location_data[i,time_step, :3]
-                deposition_data[time_step, 3] = location_data[i, time_step, 5]
-                deposition_data[time_step, 4] = i    #particle identifier to link to initial conditions
                 break
             
             # projected next 
@@ -764,17 +765,16 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         
             
         impact_data[time_step, 6] = (np.sqrt(impact_data[time_step, 4]**2 + impact_data[time_step, 3]**2))*np.sin(alpha)
+         
+
     
         if impact_data[time_step, 6] <= 0:          
             impact_data[time_step, 7] += 0.5 * m * impact_data[time_step, 6]**2
+            impact_data[time_step, 9] += E_i_coef * D * impact_data[time_step, 6]**2  #### cumulative erosion
         else:
             impact_data[time_step, 7] += 0 
-            
         
-        
-
-        
-    return deposition_data, impact_data, location_data, initial_conditions, distance_traveled
+    return impact_data, location_data, initial_conditions, distance_traveled
        
 
 if __name__ == "__main__":
