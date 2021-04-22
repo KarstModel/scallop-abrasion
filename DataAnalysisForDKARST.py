@@ -478,35 +478,7 @@ plt.semilogx()
 axs.grid(True, which = 'both', axis = 'x')
 plt.show()
 
-##combined erosion plot: erosion rates normalized to water velocity v. grain size
-fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-erosion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))
-
-# for i in range(len(scallop_lengths)):
-#     for j in range(len(diam)):
-#         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 6] < 0]
-#         total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
-#         Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
-#         if np.any(Abrasion_Rate):
-#             erosion_rates[i, j] = np.max(Abrasion_Rate/((Abrasion_Rate > 0).sum()))
-        
-#     axs.scatter(all_grains[i, :]*10, (erosion_rates[i, :]*scallop_lengths[i]), label = 'abrasional erosion on '+str(scallop_lengths[i])+' cm scallops')
-
-# axs.set_xlim(0.1, 110)
-# diss_min = (5*1.735*10**-8)  #minimum dissolution rate (mm/yr) (Grm et al., 2017)
-# diss_max = (5*4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
-# x = np.linspace(0.1, 110)
-# plt.fill_between(x, diss_min, diss_max, alpha = 0.4, color = 'gray', label = 'dissolutional range')
-# plt.semilogx()
-# plt.legend(loc = 'upper left')
-# axs.set_title('Abrasion and Dissolution Rates Over Scallops, Normalized by Water Velocity')
-# axs.set_xlabel('particle grainsize (mm)')
-# axs.set_ylabel('normalized erosion rate (cm^2/s)')
-# axs.grid(True, which = 'both', axis = 'both')
-
-
-# plt.show()
-
+#################comparing dissolution and abrasion
 cb_max = 0.02
 cb_tiny = 4 * 10**-5
 cb = np.linspace(cb_tiny, cb_max, 5)
