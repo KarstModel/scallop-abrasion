@@ -15,7 +15,7 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
-Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-04-15.npy')
+Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-04-18.npy')
 Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-04-15.npy')
 Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-04-15.npy')
 Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-15.npy')
@@ -28,7 +28,7 @@ Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-15.
 #           0 = x, 1 = z, 2 = u, 3 = w, D = particle diameter 
 # =============================================================================
     
-Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-04-15.npy')
+Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-04-18.npy')
 Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-04-15.npy')
 Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-04-15.npy')
 Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-15.npy')
@@ -42,7 +42,7 @@ Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-15.npy')
 #               links to numPartkl in Initial Conditions array, 9 = cumulative erosion
 # =============================================================================
 
-Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-04-15.npy')
+Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-04-18.npy')
 Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-04-15.npy')
 Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-04-15.npy')
 Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-04-15.npy')
@@ -461,6 +461,7 @@ for i in range(len(scallop_lengths)):
     axs.scatter(all_grains[i, :]*10, all_avg_distances[i, :], label = str(scallop_lengths[i])+' cm scallop')
 plt.semilogy()
 plt.semilogx()
+plt.legend()
 axs.set_ylabel('average travel distance (cm)') 
 axs.set_title('Average distance traveled by grain size over scallops')
 axs.set_xlabel('grain size (mm)')
@@ -476,3 +477,66 @@ plt.legend()
 plt.semilogx()
 axs.grid(True, which = 'both', axis = 'x')
 plt.show()
+
+##combined erosion plot: erosion rates normalized to water velocity v. grain size
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+erosion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))
+
+# for i in range(len(scallop_lengths)):
+#     for j in range(len(diam)):
+#         GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 6] < 0]
+#         total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
+#         Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
+#         if np.any(Abrasion_Rate):
+#             erosion_rates[i, j] = np.max(Abrasion_Rate/((Abrasion_Rate > 0).sum()))
+        
+#     axs.scatter(all_grains[i, :]*10, (erosion_rates[i, :]*scallop_lengths[i]), label = 'abrasional erosion on '+str(scallop_lengths[i])+' cm scallops')
+
+# axs.set_xlim(0.1, 110)
+# diss_min = (5*1.735*10**-8)  #minimum dissolution rate (mm/yr) (Grm et al., 2017)
+# diss_max = (5*4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
+# x = np.linspace(0.1, 110)
+# plt.fill_between(x, diss_min, diss_max, alpha = 0.4, color = 'gray', label = 'dissolutional range')
+# plt.semilogx()
+# plt.legend(loc = 'upper left')
+# axs.set_title('Abrasion and Dissolution Rates Over Scallops, Normalized by Water Velocity')
+# axs.set_xlabel('particle grainsize (mm)')
+# axs.set_ylabel('normalized erosion rate (cm^2/s)')
+# axs.grid(True, which = 'both', axis = 'both')
+
+
+# plt.show()
+
+cb_max = 0.02
+cb_tiny = 4 * 10**-5
+cb = np.linspace(cb_tiny, cb_max, 5)
+
+for h in range(len(cb)):
+    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+    erosion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))
+
+    for i in range(len(scallop_lengths)):
+        for j in range(len(diam)):
+        
+            GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 6] < 0]
+            total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
+            Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
+            if np.any(Abrasion_Rate):
+                erosion_rates[i, j] = cb[h]*np.max(Abrasion_Rate)
+    
+        axs.scatter(all_grains[i, :]*10, (erosion_rates[i, :]*scallop_lengths[i]), label = 'abrasional erosion on '+str(scallop_lengths[i])+' cm scallops')
+
+    axs.set_xlim(0.1, 110)
+    diss_min = (5*1.735*10**-8)  #minimum dissolution rate (mm/yr) (Grm et al., 2017)
+    diss_max = (5*4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
+    x = np.linspace(0.1, 110)
+    plt.fill_between(x, diss_min, diss_max, alpha = 0.4, color = 'gray', label = 'dissolutional range')
+    plt.semilogx()
+    plt.legend(loc = 'upper left')
+    axs.set_title('Abrasion and Dissolution Rates Over Scallops, Normalized by Water Velocity with cb =' +str(cb[h]))
+    axs.set_xlabel('particle grainsize (mm)')
+    axs.set_ylabel('normalized erosion rate (cm^2/s)')
+    axs.grid(True, which = 'both', axis = 'both')
+    
+    
+    plt.show()
