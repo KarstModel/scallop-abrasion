@@ -46,8 +46,8 @@ plt.close('all')
 # =============================================================================
 outfolder='./outputs'  # make sure this exists first
 l32 = 1 # choose 1, 2.5, 5, or 10, sauter-mean scallop length in cm
-n = 100  #number of grainsizes to simulate in diameter array
-numScal = int(7000/l32) #number of scallops
+n = 30  #number of grainsizes to simulate in diameter array
+numScal = int(5000/l32) #number of scallops
 numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
 flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
 if flow_regime == 'laminar':
