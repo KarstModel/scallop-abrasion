@@ -571,13 +571,14 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     location_length = np.rint(max_time/dt2)
     location_data = np.zeros(shape=(number_of_particles, int(location_length + 1), 6))    # number_of_particles * 1001 time steps * 0 = t, 1 = x, 2 = z, 3 = u, 4 = w, 5 = diameter
     impact_data = np.zeros(shape=(int(location_length), 10))  # 0 = time, 1 = x, 2 = z, 3 = u, 4 = w, 5 = D, 6 = |Vel|, 7 = KE, 8 = particle ID, 9 = erosion by one impact; one row per time step
-    distance_traveled = np.zeros(shape=(number_of_particles, 1))
+    distance_traveled = np.zeros(shape=(number_of_particles, 2)) # 0 = distance traveled, 1 = max bounce height as proxy for bedload thickness
     # define machine epsilon threshold
     eps2=10*np.sqrt( u_w0*np.finfo(float).eps )
 
     for i in range(number_of_particles):    #begin one particle at horizontal velocity = u_w0, vertical velocity = 0, and a random x and z above the first scallop
         time_step = 0
         t = 0
+        bounce_count = 0
         OOB_FLAG = False
         BOUNCED = False
         MOVING = True
@@ -719,7 +720,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
 
             location_data[i,time_step, :] = [t, pi_x, pi_z, pi_u, pi_w, D]
             #print('x',pi_x,'z',pi_z,'u',pi_u,'w',pi_w)
-            distance_traveled[i] = distance_traveled[i] + np.sqrt((location_data[i,time_step, 1] - location_data[i,time_step-1, 1])**2 + (location_data[i,time_step, 2] - location_data[i,time_step-1, 2])**2) 
+            distance_traveled[i, 0] += np.sqrt((location_data[i,time_step, 1] - location_data[i,time_step-1, 1])**2 + (location_data[i,time_step, 2] - location_data[i,time_step-1, 2])**2)
             
             if pi_u == 0 and pi_w == 0:
                 MOVING = False
@@ -743,7 +744,21 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 impact_data[time_step, :6] = location_data[i,time_step, :]
                 impact_data[time_step, 8] = i    #particle identifier to link to initial conditions
                 BOUNCED = True
+                
                # print('impact!')
+            
+                bounce_count +=1
+                ###is this the first bounce?
+                if bounce_count == 3:
+                    idx_at_third_bounce = time_step
+                if bounce_count > 1:
+                    impact_data[time_step, 9] += E_i_coef * D * impact_data[time_step, 6]**2  #### cumulative erosion
+                    if bounce_count > 3:
+                        max_bounce_height = np.max(location_data[i,idx_at_third_bounce:,2])
+                        if max_bounce_height > distance_traveled[i, 1]:
+                            distance_traveled[i, 1] = max_bounce_height
+                else:
+                    impact_data[time_step, 9] += 0
             
             if t > longest_time:
                 longest_time = t
@@ -770,12 +785,11 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     
         if impact_data[time_step, 6] <= 0:          
             impact_data[time_step, 7] += 0.5 * m * impact_data[time_step, 6]**2
-            impact_data[time_step, 9] += E_i_coef * D * impact_data[time_step, 6]**2  #### cumulative erosion
         else:
-            impact_data[time_step, 7] += 0 
+            impact_data[time_step, 7] += 0
         
     return impact_data, location_data, initial_conditions, distance_traveled
-       
+
 
 if __name__ == "__main__":
     print('tests not implemented')
