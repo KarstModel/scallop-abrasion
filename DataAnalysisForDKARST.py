@@ -15,10 +15,10 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
-Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-04-25.npy')
-Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-04-25.npy')
-Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-04-25.npy')
-Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-25.npy')
+Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-04-29.npy')
+Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-04-30.npy')
+Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-04-30.npy')
+Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-30.npy')
 # =============================================================================
 # Form of Initial Conditions array:
 #   initial conditions saved for each particle in simulation      
@@ -28,10 +28,10 @@ Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-04-25.
 #           0 = x, 1 = z, 2 = u, 3 = w, D = particle diameter 
 # =============================================================================
     
-Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-04-25.npy')
-Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-04-25.npy')
-Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-04-25.npy')
-Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-25.npy')
+Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-04-29.npy')
+Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-04-30.npy')
+Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-04-30.npy')
+Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-30.npy')
 # =============================================================================
 # Form of Impact Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -42,10 +42,10 @@ Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-04-25.npy')
 #               links to numPartkl in Initial Conditions array, 9 = cumulative erosion
 # =============================================================================
 
-Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-04-25.npy')
-Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-04-25.npy')
-Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-04-25.npy')
-Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-04-25.npy')
+Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-04-29.npy')
+Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-04-30.npy')
+Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-04-30.npy')
+Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-04-30.npy')
 # =============================================================================
 # Form of Deposit Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -92,10 +92,10 @@ for i in range(len(scallop_lengths)):
     Re = 23300     #Reynold's number from scallop formation experiments (Blumberg and Curl, 1974)
     mu_water = 0.01307  # g*cm^-1*s^-1  #because we are in cgs, value of kinematic viscosity of water = dynamic
     u_w0 = (Re * mu_water) / (l32 * rho_water)   # cm/s, assume constant downstream, x-directed velocity equal to average velocity of water as in Curl (1974)
-    grain_diam_max = (2**-(-np.log2(5.525*(u_w0/100)**2)-3))/10 
+    grain_diam_max = (2**(np.log2(0.00055249*u_w0**2)+3))/10 
+    grain_diam_min = 0.0177
     if grain_diam_max > 10:
         grain_diam_max = 10
-    grain_diam_min = 0.05
     diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, int(n))
 
 ######## set up for number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, x_array):
@@ -434,12 +434,14 @@ for h in range(len(cb)):
 
     for i in range(len(scallop_lengths)):
         for j in range(len(diam)):
-            cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   #####approximating bounce-height as 10/l32. update when the value is stored in simulation
-            total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
-            Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
-            if np.any(Abrasion_Rate):
-                erosion_rates[i, j] = cb[h]*np.sum(Abrasion_Rate)/cb_sim
-    
+            if np.any(Deposition_Data[i][j, :, 1]):
+                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   #####approximating bounce-height as 10/l32. update when the value is stored in simulation
+                total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
+                Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
+                if np.any(Abrasion_Rate):
+                    erosion_rates[i, j] = cb[h]*np.sum(Abrasion_Rate)/cb_sim
+            else:
+                erosion_rates[i,j]=0
         axs.scatter(all_grains[i, :]*10, (erosion_rates[i, :]), label = '(abrasion * scallop length) on '+str(scallop_lengths[i])+' cm scallops')
 
     axs.set_xlim(0.1, 110)
@@ -451,6 +453,10 @@ for h in range(len(cb)):
     diss_max5 = (4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
     diss_min10 = (0.5*1.735*10**-8)  #minimum dissolution rate (mm/yr) (Grm et al., 2017) scaled for 10 cm scallops
     diss_max10 = (0.5*4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)  scaled for 10 cm scallops
+    
+    diss_min = [diss_min1, diss_min2, diss_min5, diss_min10]
+    diss_max = [diss_max1, diss_max2, diss_max5, diss_max10]
+
 
     x = np.linspace(0.1, 110)
     plt.fill_between(x, diss_min1, diss_max1, alpha = 0.4, color = 'dodgerblue', label = 'dissolutional range over 1 cm scallops')
@@ -458,7 +464,7 @@ for h in range(len(cb)):
     plt.fill_between(x, diss_min5, diss_max5, alpha = 0.4, color = 'cyan', label = 'dissolutional range over 5 cm scallops')
     plt.fill_between(x, diss_min10, diss_max10, alpha = 0.4, color = 'gray', label = 'dissolutional range over 10 cm scallops')
 
-    
+    axs.set_ylim(0, 2 * diss_max1)
     plt.semilogx()
     plt.legend(loc = 'upper left')
     axs.set_title('Abrasion and Dissolution Rates Over Scallops with Sediment Concentration =' +str(round(cb[h], 5)))
@@ -468,3 +474,50 @@ for h in range(len(cb)):
     
     
     plt.show()
+
+#################comparing dissolution and abrasion, 3d scatter
+cb_max = 0.02
+cb_tiny = 4 * 10**-5
+cb = np.linspace(cb_tiny, cb_max, 21)
+
+
+fig = plt.figure(figsize = (11,8.5))
+ax = fig.add_subplot(projection='3d')
+
+abrasion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
+
+
+for i in range(len(scallop_lengths)):
+    for j in range(len(all_grains[i, :])):
+        for k in range(len(cb)):
+            if np.any(Deposition_Data[i][j, :, 1]):
+                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   #####approximating bounce-height as 10/l32. update when the value is stored in simulation
+                total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
+                Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
+                if np.any(Abrasion_Rate):
+                    abrasion_rates[i, j, k] = cb[k]*np.sum(Abrasion_Rate)/cb_sim
+            else:
+                abrasion_rates[i,j, k]=0
+            if abrasion_rates [i, j, k] < diss_min [i]:
+                m = 'o'
+                c = 'b'
+            if abrasion_rates [i, j, k] >= diss_min [i] and abrasion_rates [i, j, k] <= diss_max[i]:
+                m = '^'
+                c = 'orange'
+            if abrasion_rates [i, j, k] > diss_max[i]:
+                m = '*'
+                c= 'brown'
+                
+            
+            ax.scatter(np.log10(all_grains[i, j]*10), scallop_lengths[i], cb[k], marker = m, color = c, alpha = 0.5) 
+
+
+ax.invert_xaxis()
+ax.set_title('dissolution = o, both = ^, abrasion = *')
+ax.set_xlabel('log10[particle grainsize (mm)]')
+ax.set_zlabel('sediment concentration')
+ax.set_ylabel('scallop length (cm)')
+
+
+plt.show()
+
