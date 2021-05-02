@@ -492,7 +492,7 @@ for h in range(len(cb)):
 #     for j in range(len(all_grains[i, :])):
 #         for k in range(len(cb)):
 #             if np.any(Deposition_Data[i][j, :, 1]):
-#                 cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   #####approximating bounce-height as 10/l32. update when the value is stored in simulation
+#                 cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   
 #                 total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
 #                 Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
 #                 if np.any(Abrasion_Rate):
@@ -544,7 +544,7 @@ for i in range(len(scallop_lengths)):
     for j in range(len(all_grains[i, :])):
         for k in range(len(cb)):
             if np.any(Deposition_Data[i][j, :, 1]):
-                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   #####approximating bounce-height as 10/l32. update when the value is stored in simulation
+                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   
                 total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
                 Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
                 if np.any(Abrasion_Rate):
@@ -602,7 +602,7 @@ for i in range(len(scallop_lengths)):
     for j in range(len(all_grains[i, :])):
         for k in range(len(cb)):
             if np.any(Deposition_Data[i][j, :, 1]):
-                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   #####approximating bounce-height as 10/l32. update when the value is stored in simulation
+                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   
                 total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
                 Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
                 if np.any(Abrasion_Rate):
