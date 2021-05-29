@@ -578,7 +578,6 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
     for i in range(number_of_particles):    #begin one particle at horizontal velocity = u_w0, vertical velocity = 0, and a random x and z above the first scallop
         time_step = 0
         t = 0
-        bounce_count = 0
         OOB_FLAG = False
         BOUNCED = False
         MOVING = True
@@ -747,16 +746,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
                # print('impact!')
             
-                bounce_count +=1
-                ###is this the first bounce?
-                if bounce_count == 3:
-                    idx_at_third_bounce = time_step
-                if bounce_count > 1:
+                if next_x_idx >= (x0.size)/2:
                     impact_data[time_step, 9] += E_i_coef * D * impact_data[time_step, 6]**2  #### cumulative erosion
-                    if bounce_count > 3:
-                        max_bounce_height = np.max(location_data[i,idx_at_third_bounce:,2])
-                        if max_bounce_height > distance_traveled[i, 1]:
-                            distance_traveled[i, 1] = max_bounce_height
                 else:
                     impact_data[time_step, 9] += 0
             
