@@ -48,9 +48,9 @@ scallop_lengths = [1, 2.5, 5, 10]
 for j in range(len(scallop_lengths)):
     l32 = scallop_lengths[j]
     outfolder='./outputs'  # make sure this exists first
-    n = 100  #number of grainsizes to simulate in diameter array
+    n = 50  #number of grainsizes to simulate in diameter array
     numScal = int(5000/l32) #number of scallops
-    numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
+    numPrtkl = 50 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
     flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
     if flow_regime == 'laminar':
         l32 = 5
@@ -142,9 +142,9 @@ for j in range(len(scallop_lengths)):
     import datetime
     now = datetime.datetime.now()
     time_stamp = now.strftime('%Y-%m-%d')
-    np.save(join(outfolder,'LargeGS-Impacts-'+str(l32)+flow_regime+time_stamp), All_Impacts)
-    np.save(join(outfolder,'LargeGS-InitialConditions-'+str(l32)+flow_regime+time_stamp), All_Initial_Conditions)
-    np.save(join(outfolder,'LargeGS-TravelDistances-'+str(l32)+flow_regime+time_stamp), All_Distances)
+    np.save(join(outfolder,'Impacts-'+str(l32)+flow_regime+time_stamp), All_Impacts)
+    np.save(join(outfolder,'InitialConditions-'+str(l32)+flow_regime+time_stamp), All_Initial_Conditions)
+    np.save(join(outfolder,'TravelDistances-'+str(l32)+flow_regime+time_stamp), All_Distances)
     
     print('data saved, scallop length = ', l32)
     
