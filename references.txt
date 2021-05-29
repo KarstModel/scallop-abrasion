@@ -1,0 +1,14 @@
+Blumberg, Paul N, and Rane L Curl. “Experimental and Theoretical Studies of Dissolution Roughness.” Journal of Fluid Mechanics 65, no. 4 (1974): 735–751.
+Bosch, Rachel. “Lithofacies and Transport of Clastic Sediments in Karstic Aquifers.” The Pennsylvania State University, 2015. https://etda.libraries.psu.edu/catalog/26234.
+Bosch, Rachel F, and William B White. “Lithofacies and Transport for Clastic Sediments in Karst Conduits.” In Karst Groundwater Contamination and Public Health, 277–81. Springer, 2018.
+Brown, Julie Eileen Schenck. “Atrazine Contamination and Suspended Sediment Transport within Logsdon River, Mammoth Cave, Kentucky.” MS Thesis, Western Kentucky University, 2008.
+Curl, Rane L. “Deducing Flow Velocity in Cave Conduits from Scallops.” The NSS Bulletin 36, no. 2 (1974): 1–5. 
+Grm, Aleksander, Tomaž Šuštar, Tomaž Rodič, and Franci Gabrovšek. “A Numerical Framework for Wall Dissolution Modeling.” Mathematical Geosciences 49, no. 5 (2017): 657–675.
+Hammer, Oyvind, Stein E Lauritzen, and Bjørn Jamtveit. “Stability of Dissolution Flutes under Turbulent Flow.” Journal of Cave and Karst Studies 73, no. 3 (2011): 181–186.
+Hancock, Gregory S, Robert S Anderson, and Kelin X Whipple. “Beyond Power: Bedrock River Incision Process and Form.” Geophysical Monograph-American Geophysical Union 107 (1998): 35–60.
+Herman, Ellen K, Jennifer H Tancredi, Laura Toran, and William B White. “Mineralogy of Suspended Sediment in Three Karst Springs.” Hydrogeology Journal 15, no. 2 (2007): 255–66.
+Herman, Ellen K, Laura Toran, and William B White. “Threshold Events in Spring Discharge: Evidence from Sediment and Continuous Water Level Measurement.” Journal of Hydrology 351, no. 1–2 (2008): 98–106.
+Imre, B, S Räbsamen, and Sarah M Springman. “A Coefficient of Restitution of Rock Materials.” Computers & Geosciences 34, no. 4 (2008): 339–350.
+Lamb, Michael P, William E Dietrich, and Leonard S Sklar. “A Model for Fluvial Bedrock Incision by Impacting Suspended and Bed Load Sediment.” Journal of Geophysical Research: Earth Surface 113, no. F3 (2008).
+Siemens. Simcenter STAR-CCM+ Documentation. Austin, TX: Siemens Digital Industries Software, 2020. https://documentation.thesteveportal.plm.automation.siemens.com/starccmplus_latest_en/index.html?param=UWRBK&authLoc=https://thesteveportal.plm.automation.siemens.com/AuthoriseRedirect.
+Wang, Lin, Robin Quant, and Athanasios Kolios. “Fluid Structure Interaction Modelling of Horizontal-Axis Wind Turbine Blades Based on CFD and FEA.” Journal of Wind Engineering and Industrial Aerodynamics 158 (2016): 11–25.
