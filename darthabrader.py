@@ -746,7 +746,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 
                # print('impact!')
             
-                if next_x_idx >= (x0.size)/2:
+                if next_x_idx >= (x0.size)/50:
                     impact_data[time_step, 9] += E_i_coef * D * impact_data[time_step, 6]**2  #### cumulative erosion
                 else:
                     impact_data[time_step, 9] += 0
