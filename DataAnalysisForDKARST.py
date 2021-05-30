@@ -15,10 +15,10 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
-Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-05-28.npy')
-Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-05-28.npy')
-Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-05-28.npy')
-Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-05-28.npy')
+Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-05-30.npy')
+Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-05-30.npy')
+Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-05-30.npy')
+Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-05-30.npy')
 # =============================================================================
 # Form of Initial Conditions array:
 #   initial conditions saved for each particle in simulation      
@@ -28,10 +28,10 @@ Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-05-28.
 #           0 = x, 1 = z, 2 = u, 3 = w, D = particle diameter 
 # =============================================================================
     
-Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-05-28.npy')
-Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-05-28.npy')
-Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-05-28.npy')
-Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-05-28.npy')
+Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-05-30.npy')
+Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-05-30.npy')
+Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-05-30.npy')
+Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-05-30.npy')
 # =============================================================================
 # Form of Impact Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -42,10 +42,10 @@ Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-05-28.npy')
 #               links to numPartkl in Initial Conditions array, 9 = cumulative erosion
 # =============================================================================
 
-Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-05-28.npy')
-Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-05-28.npy')
-Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-05-28.npy')
-Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-05-28.npy')
+Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-05-30.npy')
+Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-05-30.npy')
+Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-05-30.npy')
+Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-05-30.npy')
 # =============================================================================
 # Form of Deposit Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -580,60 +580,3 @@ for i in range(len(scallop_lengths)):
     
     plt.show()
 
-#################comparing dissolution and abrasion, collapse all to 2D
-cb_max = 0.02
-cb_tiny = 4 * 10**-5
-cb = cb_max * np.logspace((np.log10(cb_tiny/cb_max)), 0, 51)
-
-abrasion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
-erosion_difference = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
-
-percent_change_max = [174800, 130700, 278900, 174800]
-hiding_size = [0, 0.05, 0.08, 0.1]
-x_min = [0.177, 0.4, 0.7, 0.9]
-
-fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-for i in range(len(scallop_lengths)):
-
-    mean_dissolution = 0.5 * (diss_min[i] + diss_max[i])
-    ColorMax = np.ceil(100)
-    my_colors = cm.get_cmap('RdYlBu_r', 256)
-    
-    for j in range(len(all_grains[i, :])):
-        for k in range(len(cb)):
-            if np.any(Deposition_Data[i][j, :, 1]):
-                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   
-                total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
-                Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
-                if np.any(Abrasion_Rate):
-                    abrasion_rates[i, j, k] = cb[k]*np.sum(Abrasion_Rate)/cb_sim
-            else:
-                abrasion_rates[i,j, k]=0
-            erosion_difference[i,j,k] = ((abrasion_rates[i, j, k] - mean_dissolution)/mean_dissolution)*100
-
-            findColors = (erosion_difference[i,j,k])/ColorMax
-            
-            if all_grains[i, j] < hiding_size[i]:
-                c = 'gainsboro'
-            elif erosion_difference[i,j,k] < -39:
-                c = 'cyan'
-            elif erosion_difference[i,j,k] > 39:
-                c = 'magenta'
-            elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39:
-                c = 'yellow'
-            else:
-                c = my_colors(findColors)
-            axs.scatter((all_grains[i, j]/scallop_lengths[i]), cb[k], color = c, marker = 's', alpha = 0.5) 
-
-plt.semilogx()
-plt.semilogy()
-#axs.set_xlim(x_min[i], (np.max(all_grains[i,:]))*10)
-axs.set_title('Relative erosional processes over scallops')
-axs.set_xlabel('particle grainsize/scallop length')
-axs.set_ylabel('sediment concentration')
-cb_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
-norm = colors.Normalize(vmin = -ColorMax, vmax = ColorMax)
-plt.colorbar(cm.ScalarMappable(norm = norm, cmap='RdYlBu_r'), cax = cb_ax)
-cb_ax.set_ylabel('percent change abrasion to dissolution (cm/s)')
-
-plt.show()
