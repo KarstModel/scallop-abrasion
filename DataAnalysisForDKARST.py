@@ -15,10 +15,10 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
-Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-06-04.npy')
-Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-06-04.npy')
-Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-06-04.npy')
-Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-06-05.npy')
+Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-06-18.npy')
+Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-06-18.npy')
+Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-06-18.npy')
+Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-06-18.npy')
 # =============================================================================
 # Form of Initial Conditions array:
 #   initial conditions saved for each particle in simulation      
@@ -28,10 +28,10 @@ Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-06-05.
 #           0 = x, 1 = z, 2 = u, 3 = w, D = particle diameter 
 # =============================================================================
     
-Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-06-04.npy')
-Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-06-04.npy')
-Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-06-04.npy')
-Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-06-05.npy')
+Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-06-18.npy')
+Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-06-18.npy')
+Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-06-18.npy')
+Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-06-18.npy')
 # =============================================================================
 # Form of Impact Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -42,10 +42,10 @@ Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-06-05.npy')
 #               links to numPartkl in Initial Conditions array, 9 = cumulative erosion
 # =============================================================================
 
-Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-06-04.npy')
-Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-06-04.npy')
-Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-06-04.npy')
-Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-06-05.npy')
+Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-06-18.npy')
+Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-06-18.npy')
+Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-06-18.npy')
+Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-06-18.npy')
 # =============================================================================
 # Form of Deposit Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -55,8 +55,12 @@ Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-06-05.npy')
 scallop_lengths = [1, 2.5, 5, 10]
 number_of_scallops= [400/scallop_lengths[0], 400/scallop_lengths[1], 400/scallop_lengths[2], 400/scallop_lengths[3]]
 Impact_Data = [Impact_Data1, Impact_Data2, Impact_Data5, Impact_Data10]
-for i in range()
-Impact_Data = Impact_Data[Impact_Data[:][:, :, 1]>100]
+
+# for i in range(np.shape(Impact_Data)[0]):
+#     for j in range(np.shape(Impact_Data)[1]):
+#         for k in range(np.shape(Impact_Data)[2]):
+#             Impact_Data = Impact_Data[i][j, k, :][Impact_Data[i][j, k, 1]>100]
+
 Initial_Conditions = [Initial_Conditions1, Initial_Conditions2, Initial_Conditions5, Initial_Conditions10]
 Deposition_Data = [Deposition_Data1, Deposition_Data2, Deposition_Data5, Deposition_Data10]
 x_stretch = [8000, 8000, 1600, 400]
@@ -560,19 +564,20 @@ for i in range(len(scallop_lengths)):
             
             if all_grains[i, j] < hiding_size[i]:
                 c = 'gainsboro'
-            elif erosion_difference[i,j,k] < -39:
-                c = 'aqua'
-            elif erosion_difference[i,j,k] > 39:
-                c = 'darkgoldenrod'
+            # elif erosion_difference[i,j,k] < -39:
+            #     c = 'aqua'
+            # elif erosion_difference[i,j,k] > 39:
+            #     c = 'darkgoldenrod'
             elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39:
-                c = 'magenta'
+                c = 'yellow'
             else:
                 c = my_colors(findColors)
             axs.scatter((all_grains[i, j]*10), cb[k], color = c, marker = 's', s = 100) 
 
     plt.semilogx()
     plt.semilogy()
-    axs.set_xlim(x_min[i], (np.max(all_grains[i,:]))*10)
+    #axs.set_xlim(x_min[i], (np.max(all_grains[i,:]))*10)
+    axs.set_xlim(x_min[0], 100)
     axs.set_title('Relative erosional processes over ' +str(scallop_lengths[i])+ '-cm scallops')
     axs.set_xlabel('particle grainsize (mm)')
     axs.set_ylabel('sediment concentration')
