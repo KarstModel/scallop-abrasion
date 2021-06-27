@@ -66,7 +66,8 @@ for j in range(len(scallop_lengths)):
         grain_diam_max = 10
     
     max_time = 20  #seconds
-    abrasion_start_location = 500   # only particles that travel > 2 m will contribute to abrasion
+    abrasion_start_location = 500   # only particles that travel > 5 m will contribute to abrasion
+    abrasion_end_location = 2500  # only particles that travel < 25 m will contribute to abrasion
     # =============================================================================
     
     #build the bedrock scallop array
@@ -126,7 +127,7 @@ for j in range(len(scallop_lengths)):
     
         # In[10]:
         
-        impact_data, loc_data, init_con, distance_traveled= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, dx, theta2, mu_water, cH, l32, numPrtkl, max_time, abrasion_start_location)
+        impact_data, loc_data, init_con, distance_traveled= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, dx, theta2, mu_water, cH, l32, numPrtkl, max_time, abrasion_start_location, abrasion_end_location)
         
         All_Initial_Conditions[i, :, :] = init_con
         All_Impacts[i, :len(impact_data), :] = impact_data
