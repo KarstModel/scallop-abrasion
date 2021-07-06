@@ -431,9 +431,9 @@ for i in range(len(scallop_lengths)):
 # plt.show()
 
 #################comparing dissolution and abrasion
-cb_max = 0.015
-cb_tiny = 7 * 10**-6
-cb = np.linspace(cb_tiny, cb_max, 4)
+cb_max = -3
+cb_tiny = -6
+cb =  7 * np.logspace(cb_tiny, cb_max, 4)
 
 for h in range(len(cb)):
     fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
@@ -474,7 +474,7 @@ for h in range(len(cb)):
     # axs.set_ylim(0, 2 * diss_max1)
     plt.semilogx()
     #plt.legend(loc = 'upper left')
-    axs.set_title('Sediment Concentration =' +str(round(cb[h], 5)), fontsize = 18)
+    axs.set_title('Sediment Concentration =' +str(round(cb[h], 6)), fontsize = 18)
     axs.set_xlabel('particle grainsize (mm)', fontsize = 16)
     axs.set_ylabel('erosion rate (cm/s)', fontsize = 16)
     axs.grid(True, which = 'both', axis = 'both')
@@ -588,3 +588,74 @@ for i in range(len(scallop_lengths)):
     
     plt.show()
 
+#################comparing dissolution and abrasion, bust out into four plots, grain sizes as ratios
+cb_max = 0.015
+cb_tiny = 7 * 10**-6
+cb = cb_max * np.logspace((np.log10(cb_tiny/cb_max)), 0, 51)
+
+abrasion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
+erosion_difference = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
+
+percent_change_max = [174800, 130700, 278900, 174800]
+hiding_size = [0, 0.05, 0.08, 0.1]
+x_min = [0.177, 0.4, 0.7, 0.9]
+
+
+
+fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+mean_dissolution = 0.5 * (diss_min[i] + diss_max[i])
+ColorMax = np.ceil(100)
+my_colors = cm.get_cmap('RdYlBu_r', 256)
+for i in range(len(scallop_lengths)):    
+    for j in range(len(all_grains[i, :])):
+        for k in range(len(cb)):
+            if np.any(Deposition_Data[i][j, :, 1]):
+                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   
+                total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
+                Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
+                if np.any(Abrasion_Rate):
+                    abrasion_rates[i, j, k] = cb[k]*np.sum(Abrasion_Rate)/cb_sim
+            else:
+                abrasion_rates[i,j, k]=0
+            erosion_difference[i,j,k] = ((abrasion_rates[i, j, k] - mean_dissolution)/mean_dissolution)*100
+
+            findColors = (erosion_difference[i,j,k])/ColorMax
+            
+            # if all_grains[i, j] < hiding_size[i]:
+            #     c = 'gainsboro'
+            # elif erosion_difference[i,j,k] < -39:
+            #     c = 'aqua'
+            # elif erosion_difference[i,j,k] > 39:
+            #     c = 'darkgoldenrod'
+            if erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39 and i == 0:
+                c = 'tab:red'
+                a = 1
+            elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39 and i == 1:
+                c = 'tab:blue'
+                a = 1
+            elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39 and i == 2:
+                c = 'tab:green'
+                a = 1
+            elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39 and i == 3:
+                c = 'tab:purple'
+                a = 1
+            else:
+                c = '1'
+                a = 0
+            # else:
+            #     c = my_colors(findColors)
+            axs.scatter((all_grains[i, j]/scallop_lengths[i]), cb[k], color = c, marker = 's', s = 100, alpha = a) 
+
+plt.semilogx()
+plt.semilogy()
+#axs.set_xlim(x_min[i], (np.max(all_grains[i,:]))*10)
+#axs.set_xlim(x_min[0], 100)
+axs.set_title('Relative erosional processes over scallops', fontsize = 20)
+axs.set_xlabel('particle grainsize : scallop length', fontsize = 18)
+axs.set_ylabel('sediment concentration', fontsize = 18)
+cb_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
+norm = colors.Normalize(vmin = -ColorMax, vmax = ColorMax)
+plt.colorbar(cm.ScalarMappable(norm = norm, cmap='RdYlBu_r'), cax = cb_ax)
+cb_ax.set_ylabel('percent change abrasion to dissolution (cm/s)', fontsize = 16)
+
+plt.show()
