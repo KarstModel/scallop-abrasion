@@ -44,12 +44,12 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-scallop_lengths = [1, 2.5, 5, 10]
+scallop_lengths = [10]
 for j in range(len(scallop_lengths)):
     l32 = scallop_lengths[j]
     outfolder='./outputs'  # make sure this exists first
     n = 100  #number of grainsizes to simulate in diameter array
-    numScal = int(5000/l32) #number of scallops
+    numScal = int(2500/l32) #number of scallops
     numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
     flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
     if flow_regime == 'laminar':
