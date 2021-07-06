@@ -44,12 +44,12 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-scallop_lengths = [1, 2.5, 5, 10]
+scallop_lengths = [10]
 for j in range(len(scallop_lengths)):
     l32 = scallop_lengths[j]
     outfolder='./outputs'  # make sure this exists first
     n = 100  #number of grainsizes to simulate in diameter array
-    numScal = int(5000/l32) #number of scallops
+    numScal = int(2500/l32) #number of scallops
     numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
     flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
     if flow_regime == 'laminar':
@@ -66,6 +66,8 @@ for j in range(len(scallop_lengths)):
         grain_diam_max = 10
     
     max_time = 20  #seconds
+    abrasion_start_location = 500   # only particles that travel > 5 m will contribute to abrasion
+    abrasion_end_location = 2500  # only particles that travel < 25 m will contribute to abrasion
     # =============================================================================
     
     #build the bedrock scallop array
@@ -125,7 +127,7 @@ for j in range(len(scallop_lengths)):
     
         # In[10]:
         
-        impact_data, loc_data, init_con, distance_traveled= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, dx, theta2, mu_water, cH, l32, numPrtkl, max_time)
+        impact_data, loc_data, init_con, distance_traveled= da.sediment_saltation(x0, z0, w_water, u_water, u_w0, D, dx, theta2, mu_water, cH, l32, numPrtkl, max_time, abrasion_start_location, abrasion_end_location)
         
         All_Initial_Conditions[i, :, :] = init_con
         All_Impacts[i, :len(impact_data), :] = impact_data

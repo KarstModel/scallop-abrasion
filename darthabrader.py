@@ -552,7 +552,7 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, theta2, mu_kin, crest_height, scallop_length, number_of_particles, max_time):
+def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, theta2, mu_kin, crest_height, scallop_length, number_of_particles, max_time, abrasion_start_location, abrasion_end_location):
     ### define constants and parameters
     rho_w = 1
     rho_s = 2.65
@@ -740,13 +740,12 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 OOB_FLAG = True
                 break                        
             
-            if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx)]:
-                impact_data[time_step, :6] = location_data[i,time_step, :]
-                impact_data[time_step, 8] = i    #particle identifier to link to initial conditions
-                BOUNCED = True
+            if next_x_idx > 0 and pi_z <= scallop_elevation[int(next_x_idx - 1)]:
+                BOUNCED = True               
+                if next_x_idx > abrasion_start_location and pi_z <= scallop_elevation[int(next_x_idx - 1)]:
+                    impact_data[time_step, :6] = location_data[i,time_step, :]
+                    impact_data[time_step, 8] = i    #particle identifier to link to initial conditions
                 
-               # print('impact!')
-            
                 bounce_count +=1
                 ###is this the first bounce?
                 if bounce_count == 3:
@@ -756,15 +755,13 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                     if max_bounce_height > distance_traveled[i, 1]:
                         distance_traveled[i, 1] = max_bounce_height
                 
-                if next_x_idx > (x0.size)/50:
+                if next_x_idx > abrasion_start_location and next_x_idx <= abrasion_end_location:
                     impact_data[time_step, 9] += E_i_coef * D * impact_data[time_step, 6]**2  #### cumulative erosion
                 else:
                     impact_data[time_step, 9] += 0
             
             if t > longest_time:
                 longest_time = t
-                #print('longest time, ', longest_time)
-                
     
         if impact_data[time_step,3] != 0:
             theta1 = np.arctan(impact_data[time_step, 4]/impact_data[time_step, 3])             
@@ -779,8 +776,8 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             
         alpha = theta1 - theta2[int(x_idx)]          # angle of impact
         
-            
-        impact_data[time_step, 6] = (np.sqrt(impact_data[time_step, 4]**2 + impact_data[time_step, 3]**2))*np.sin(alpha)
+        if next_x_idx > abrasion_start_location and next_x_idx <= abrasion_end_location and pi_z <= scallop_elevation[int(next_x_idx - 1)]:    
+            impact_data[time_step, 6] = (np.sqrt(impact_data[time_step, 4]**2 + impact_data[time_step, 3]**2))*np.sin(alpha)
          
 
     
