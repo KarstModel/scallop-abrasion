@@ -552,7 +552,7 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
-def particle_drag_accelerations(urel,wrel,mu_kin,eps2):
+def particle_drag_accelerations(urel,wrel,D,rho_w,rho_s,mu_kin,g,eps2):
     # takes x and z velocity components, calculates total velocity along direction
     # of travel, drag coefficient, and acceleration, and returns decomposed x and z 
     # acceleration components
@@ -566,14 +566,18 @@ def particle_drag_accelerations(urel,wrel,mu_kin,eps2):
     if np.abs(vel_tot) > eps2:                                       
         Re_p = particle_reynolds_number(D, vel_tot, mu_kin)
         drag_coef = dragcoeff(Re_p)
-        acc_tot = (1 - (rho_w/rho_s)) * g + np.sign(vel_tot) * ((3 * rho_w * drag_coef) * (vel_tot**2) /(4 * rho_s * D))  
+        acc_drag = ((3 * rho_w * drag_coef) * (vel_tot**2) /(4 * rho_s * D))  
     else:
-        acc_tot = 0
+        acc_drag = 0
     
-    #re-decompose accelerations
-    ax = acc_tot * urel/vel_tot
-    az = acc_tot * wrel/vel_tot
-                
+    #re-decompose drag accelerations
+    if abs(vel_tot) > 0:
+        ax = acc_drag * urel/vel_tot
+        az = (1 - (rho_w/rho_s)) * g + acc_drag * wrel/vel_tot
+    else: 
+        ax = 0
+        az = (1 - (rho_w/rho_s)) * g
+    #print(vel_tot,ax,az)
     return ax, az
 
 def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, theta2, mu_kin, crest_height, scallop_length, number_of_particles, max_time, abrasion_start_location, abrasion_end_location):
@@ -667,9 +671,25 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
        
                 ### since, by definition, water velocity at the wall equals zero, 
                 # the relative velocity at rebound is equal to the reflected 
-                # velocity of the particle
+                # velocity of the particle 
                 
-                ax, az = particle_drag_accelerations(up,wp,mu_kin,eps2)
+                ## Note DW 2021-11-09: Is this right, given the center of the 
+                # particle is not actually at the wall? OTOH the leading edge 
+                # of the particle IS at the wall...
+                
+                # let's test
+                # wp = location_data[i,time_step-1, 4]
+                # ww = w_water[int(z_idx), int(x_idx)]
+                # wrel = ww - wp
+                # up = location_data[i,time_step-1, 3]
+                # uw = u_water[int(z_idx), int(x_idx)]     
+                # urel = uw - up
+                # ax, az = particle_drag_accelerations(urel,wrel,D,rho_w,rho_s,mu_kin,g,eps2)
+                
+                #... contrary to my expectations, this eliminates all saltation, and
+                # all particles stop upon contact. so, the prior verison below
+                
+                ax, az = particle_drag_accelerations(up,wp,D,rho_w,rho_s,mu_kin,g,eps2)
                 
                 
                 #use reflected velocity components to advance one time step in rebound direction, then return to flow control in outer while loop
@@ -709,7 +729,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 uw = u_water[int(z_idx), int(x_idx)]     
             urel = uw - up
             
-            ax, az = particle_drag_accelerations(urel,wrel,mu_kin,eps2)
+            ax, az = particle_drag_accelerations(urel,wrel,D,rho_w,rho_s,mu_kin,g,eps2)
 
             pi_u = location_data[i,time_step-1, 3] + (ax * dt2)
             pi_w = location_data[i,time_step-1, 4] + (az * dt2)
