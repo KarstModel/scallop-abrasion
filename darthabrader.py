@@ -622,9 +622,9 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         z_idx = np.rint(z_init/0.05)
         x_idx = np.rint(x_init/0.05)
         if z_idx >= np.shape(w_water)[0]:
-                HIGH_WATER = True
-                u_init = u_w0
-                w_init = -0.01
+            HIGH_WATER = True
+            u_init = u_w0
+            w_init = -0.01
         else:
             u_init = u_water[int(z_idx), int(x_idx)]
             w_init = w_water[int(z_idx), int(x_idx)]
@@ -653,7 +653,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                     wp = (CoR * location_data[i,time_step-1, 4] * np.sin(beta))
                 if np.cos(theta1) != 0:
                     convert_u = np.cos(beta) / np.cos(theta1)
-                    up =(CoR * location_data[i,time_step-1, 3] * convert_u)
+                    up = (CoR * location_data[i,time_step-1, 3] * convert_u)
                 else:
                     up = (CoR * location_data[i,time_step-1, 3] * np.cos(beta))
 
@@ -705,8 +705,10 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             t += dt2
             time_step += 1
             HIGH_WATER = False
+            
             x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))                
             z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
+            
             if z_idx < 0:
                 z_idx = 0
             elif z_idx >= np.shape(w_water)[0]:
@@ -717,16 +719,21 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 break
    
             wp = location_data[i,time_step-1, 4]
+            
             if HIGH_WATER:
                 ww = 0
             else:
                 ww = w_water[int(z_idx), int(x_idx)]
+                
             wrel = ww - wp
+            
             up = location_data[i,time_step-1, 3]
+            
             if HIGH_WATER:
                 uw = u_w0
             else:
                 uw = u_water[int(z_idx), int(x_idx)]     
+                
             urel = uw - up
             
             ax, az = particle_drag_accelerations(urel,wrel,D,rho_w,rho_s,mu_kin,g,eps2)
