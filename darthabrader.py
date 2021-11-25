@@ -552,6 +552,34 @@ def particle_reynolds_number(D,urel,mu_kin):
     # Grain diameter, relative velocity (settling-ambient), kinematic viscosity
     return 2*D*np.abs(urel)/mu_kin
 
+def particle_drag_accelerations(urel,wrel,D,rho_w,rho_s,mu_kin,g,eps2):
+    # takes x and z velocity components, calculates total velocity along direction
+    # of travel, drag coefficient, and acceleration, and returns decomposed x and z 
+    # acceleration components
+    # also make sure the relative velocity is sufficiently above 
+    # machine precision (eps2) that squaring it in the next step doesn't result in underflow
+            
+    # velocity along motion vector
+    vel_tot = np.sqrt(urel**2 + wrel**2)
+    
+    # calculate drag and acceleraion along velocity vector
+    if np.abs(vel_tot) > eps2:                                       
+        Re_p = particle_reynolds_number(D, vel_tot, mu_kin)
+        drag_coef = dragcoeff(Re_p)
+        acc_drag = ((3 * rho_w * drag_coef) * (vel_tot**2) /(4 * rho_s * D))  
+    else:
+        acc_drag = 0
+    
+    #re-decompose drag accelerations
+    if abs(vel_tot) > 0:
+        ax = acc_drag * urel/vel_tot
+        az = (1 - (rho_w/rho_s)) * g + acc_drag * wrel/vel_tot
+    else: 
+        ax = 0
+        az = (1 - (rho_w/rho_s)) * g
+    #print(vel_tot,ax,az)
+    return ax, az
+
 def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, theta2, mu_kin, crest_height, scallop_length, number_of_particles, max_time, abrasion_start_location, abrasion_end_location):
     ### define constants and parameters
     rho_w = 1
@@ -594,9 +622,9 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
         z_idx = np.rint(z_init/0.05)
         x_idx = np.rint(x_init/0.05)
         if z_idx >= np.shape(w_water)[0]:
-                HIGH_WATER = True
-                u_init = u_w0
-                w_init = -0.01
+            HIGH_WATER = True
+            u_init = u_w0
+            w_init = -0.01
         else:
             u_init = u_water[int(z_idx), int(x_idx)]
             w_init = w_water[int(z_idx), int(x_idx)]
@@ -625,7 +653,7 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                     wp = (CoR * location_data[i,time_step-1, 4] * np.sin(beta))
                 if np.cos(theta1) != 0:
                     convert_u = np.cos(beta) / np.cos(theta1)
-                    up =(CoR * location_data[i,time_step-1, 3] * convert_u)
+                    up = (CoR * location_data[i,time_step-1, 3] * convert_u)
                 else:
                     up = (CoR * location_data[i,time_step-1, 3] * np.cos(beta))
 
@@ -641,22 +669,28 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                     #print('out of bounds horizontally!')
                     break
        
-                ### since, by definition, water velocity at the wall equals zero, the relative velocity at rebound is equal to the reflected velocity of the particle
-                if np.abs(wp) > eps2:                                       
-                    Re_p = particle_reynolds_number(D, wp, mu_kin)
-                    drag_coef = dragcoeff(Re_p)
-                    az = (1 - (rho_w/rho_s)) * g + np.sign(wp) * ((3 * rho_w * drag_coef) * (wp**2) /(4 * rho_s * D))  
-                    #print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
-                else:
-                    az = 0
-                              
-                if np.abs(up) > eps2:
-                    Re_p = particle_reynolds_number(D, up, mu_kin)
-                    drag_coef = dragcoeff(Re_p)
-                    ax = np.sign(up) * ((3 * rho_w * drag_coef) * (up**2) /(4 * rho_s * D))      
-                    #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
-                else:
-                    ax = 0
+                ### since, by definition, water velocity at the wall equals zero, 
+                # the relative velocity at rebound is equal to the reflected 
+                # velocity of the particle 
+                
+                ## Note DW 2021-11-09: Is this right, given the center of the 
+                # particle is not actually at the wall? OTOH the leading edge 
+                # of the particle IS at the wall...
+                
+                # let's test
+                # wp = location_data[i,time_step-1, 4]
+                # ww = w_water[int(z_idx), int(x_idx)]
+                # wrel = ww - wp
+                # up = location_data[i,time_step-1, 3]
+                # uw = u_water[int(z_idx), int(x_idx)]     
+                # urel = uw - up
+                # ax, az = particle_drag_accelerations(urel,wrel,D,rho_w,rho_s,mu_kin,g,eps2)
+                
+                #... contrary to my expectations, this eliminates all saltation, and
+                # all particles stop upon contact. so, the prior verison below
+                
+                ax, az = particle_drag_accelerations(up,wp,D,rho_w,rho_s,mu_kin,g,eps2)
+                
                 
                 #use reflected velocity components to advance one time step in rebound direction, then return to flow control in outer while loop
                 u_rebound = up + (ax * dt2)
@@ -671,8 +705,10 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
             t += dt2
             time_step += 1
             HIGH_WATER = False
+            
             x_idx = np.rint((location_data[i,time_step-1, 1]/0.05))                
             z_idx = np.rint((location_data[i,time_step-1, 2]/0.05))
+            
             if z_idx < 0:
                 z_idx = 0
             elif z_idx >= np.shape(w_water)[0]:
@@ -683,36 +719,25 @@ def sediment_saltation(x0, scallop_elevation, w_water, u_water, u_w0, D, dx, the
                 break
    
             wp = location_data[i,time_step-1, 4]
+            
             if HIGH_WATER:
                 ww = 0
             else:
                 ww = w_water[int(z_idx), int(x_idx)]
+                
             wrel = ww - wp
+            
             up = location_data[i,time_step-1, 3]
+            
             if HIGH_WATER:
                 uw = u_w0
             else:
                 uw = u_water[int(z_idx), int(x_idx)]     
+                
             urel = uw - up
             
-            # these blocks make sure the relative velocity is sufficiently above 
-            # machine precision that squaring it in the next step doesn't result in underflow
-            if np.abs(wrel) > eps2:                                       
-                Re_p = particle_reynolds_number(D, wrel, mu_kin)
-                drag_coef = dragcoeff(Re_p)
-                az = (1 - (rho_w/rho_s)) * g + np.sign(wrel) * ((3 * rho_w * drag_coef) * (wrel**2) /(4 * rho_s * D))  
-                #print('ww',ww,'wp',wp,'wrel', wrel, 'wrel_drag', drag_coef,'az',az)
-            else:
-                az = 0
-                          
-            if np.abs(urel) > eps2:
-                Re_p = particle_reynolds_number(D, urel, mu_kin)
-                drag_coef = dragcoeff(Re_p)
-                ax = np.sign(urel) * ((3 * rho_w * drag_coef) * (urel**2) /(4 * rho_s * D))      
-                #print('uw',uw,'up',up,'urel',urel,'urel_drag', drag_coef,'ax',ax)
-            else:
-                ax = 0
-                
+            ax, az = particle_drag_accelerations(urel,wrel,D,rho_w,rho_s,mu_kin,g,eps2)
+
             pi_u = location_data[i,time_step-1, 3] + (ax * dt2)
             pi_w = location_data[i,time_step-1, 4] + (az * dt2)
             pi_x = location_data[i,time_step-1, 1] + pi_u * dt2 + 0.5 * ax * dt2**2 

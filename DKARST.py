@@ -44,13 +44,13 @@ plt.close('all')
 
 # ### user input: 
 # =============================================================================
-scallop_lengths = [10]
+scallop_lengths = [2.5]
 for j in range(len(scallop_lengths)):
     l32 = scallop_lengths[j]
     outfolder='./outputs'  # make sure this exists first
-    n = 100  #number of grainsizes to simulate in diameter array
-    numScal = int(2500/l32) #number of scallops
-    numPrtkl = 200 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
+    n = 10  #number of grainsizes to simulate in diameter array
+    numScal = int(500/l32) #number of scallops
+    numPrtkl = 100 # number of particles to release for each grainsize, for now, must use fewer than (l32 * numScal / 0.05)
     flow_regime = 'turbulent'    ### choose 'laminar' or 'turbulent'
     if flow_regime == 'laminar':
         l32 = 5
@@ -66,8 +66,8 @@ for j in range(len(scallop_lengths)):
         grain_diam_max = 10
     
     max_time = 20  #seconds
-    abrasion_start_location = 500   # only particles that travel > 5 m will contribute to abrasion
-    abrasion_end_location = 2500  # only particles that travel < 25 m will contribute to abrasion
+    abrasion_start_location = 200   # only particles that travel > 5 m will contribute to abrasion
+    abrasion_end_location = 500  # only particles that travel < 25 m will contribute to abrasion
     # =============================================================================
     
     #build the bedrock scallop array
