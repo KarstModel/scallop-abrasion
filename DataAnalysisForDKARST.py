@@ -15,10 +15,10 @@ from matplotlib import cm
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
-Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2021-07-01.npy')
-Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2021-07-01.npy')
-Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2021-07-01.npy')
-Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-07-02.npy')
+Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2022-01-14.npy')
+Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2022-01-15.npy')
+Initial_Conditions5 = np.load('outputs\InitialConditions-5turbulent2022-01-15.npy')
+Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2022-01-15.npy')
 # =============================================================================
 # Form of Initial Conditions array:
 #   initial conditions saved for each particle in simulation      
@@ -28,10 +28,10 @@ Initial_Conditions10 = np.load('outputs\InitialConditions-10turbulent2021-07-02.
 #           0 = x, 1 = z, 2 = u, 3 = w, D = particle diameter 
 # =============================================================================
     
-Impact_Data1 = np.load('outputs\Impacts-1turbulent2021-07-01.npy')
-Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2021-07-01.npy')
-Impact_Data5 = np.load('outputs\Impacts-5turbulent2021-07-01.npy')
-Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-07-02.npy')
+Impact_Data1 = np.load('outputs\Impacts-1turbulent2022-01-14.npy')
+Impact_Data2 = np.load('outputs\Impacts-2.5turbulent2022-01-15.npy')
+Impact_Data5 = np.load('outputs\Impacts-5turbulent2022-01-15.npy')
+Impact_Data10 = np.load('outputs\Impacts-10turbulent2022-01-15.npy')
 # =============================================================================
 # Form of Impact Data array:
 #   data collected every time a particle impacts the bedrock surface
@@ -42,10 +42,10 @@ Impact_Data10 = np.load('outputs\Impacts-10turbulent2021-07-02.npy')
 #               links to numPartkl in Initial Conditions array, 9 = cumulative erosion
 # =============================================================================
 
-Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2021-07-01.npy')
-Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2021-07-01.npy')
-Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2021-07-01.npy')
-Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2021-07-02.npy')
+Deposition_Data1 = np.load('outputs\TravelDistances-1turbulent2022-01-14.npy')
+Deposition_Data2 = np.load('outputs\TravelDistances-2.5turbulent2022-01-15.npy')
+Deposition_Data5 = np.load('outputs\TravelDistances-5turbulent2022-01-15.npy')
+Deposition_Data10 = np.load('outputs\TravelDistances-10turbulent2022-01-15.npy')
 # =============================================================================
 # Form of Deposit Data array:
 #   data collected every time a particle impacts the bedrock surface
