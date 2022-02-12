@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+Version 2-0, 12 February 2022
+Rachel Bosch
+
 Created on Thurs March 18 21:36:05 2021
 
 @author: rachel bosch
@@ -9,11 +12,6 @@ This code replaces "DataAnalysisScratchPad" to reflect major changes in data sto
 import numpy as np
 from matplotlib import pyplot as plt
 import darthabrader as da
-from scipy.optimize import curve_fit
-from matplotlib import colors
-from matplotlib import cm
-from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes 
-from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 
 Initial_Conditions1 = np.load('outputs\InitialConditions-1turbulent2022-01-14.npy')
 Initial_Conditions2 = np.load('outputs\InitialConditions-2.5turbulent2022-01-15.npy')
@@ -65,8 +63,10 @@ all_impact_numbers = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))
 all_avg_energies = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))                      
 all_avg_distances = np.zeros(shape = (len(scallop_lengths), len(Deposition_Data1)))
 
+Wentworth = ['medium silt', 'coarse silt', 'very fine sand', 'fine sand', 'medium sand', 'coarse sand', 'very coarse sand', 'granules', 'pebbles', 'cobbles']
+Ww_max_sizes = [0.031, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 64, 256]
+
 for i in range(len(scallop_lengths)):
-    
     ###pull the turbulent flowfield data
     l32 = scallop_lengths[i]
     dx0 = 0.05/l32
@@ -87,273 +87,66 @@ for i in range(len(scallop_lengths)):
     if grain_diam_max > 10:
         grain_diam_max = 10
     diam = grain_diam_max * np.logspace((np.log10(grain_diam_min/grain_diam_max)), 0, int(n))
+    
+    #break diameter array into bins by Wentworth classification
+    m_silt_all = np.where(diam <= Ww_max_sizes[0], diam, 0)
+    m_silt = np.delete(m_silt_all, np.where(m_silt_all==0))
+    c_silt_all = np.where(diam > Ww_max_sizes[0], diam, 0)
+    c_silt_all = np.where(c_silt_all <= Ww_max_sizes[1], c_silt_all, 0)
+    c_silt = np.delete(c_silt_all, np.where(c_silt_all==0))
+    vf_sand_all = np.where(diam > Ww_max_sizes[1], diam, 0)
+    vf_sand_all = np.where(vf_sand_all <= Ww_max_sizes[2], vf_sand_all, 0)
+    vf_sand = np.delete(vf_sand_all, np.where(vf_sand_all==0))
+    f_sand_all = np.where(diam > Ww_max_sizes[2], diam, 0)
+    f_sand_all = np.where(f_sand_all <= Ww_max_sizes[3], f_sand_all, 0)
+    f_sand = np.delete(f_sand_all, np.where(f_sand_all==0))
+    m_sand_all = np.where(diam > Ww_max_sizes[3], diam, 0)
+    m_sand_all = np.where(m_sand_all <= Ww_max_sizes[4], m_sand_all, 0)
+    m_sand = np.delete(m_sand_all, np.where(m_sand_all==0))
+    c_sand_all = np.where(diam > Ww_max_sizes[4], diam, 0)
+    c_sand_all = np.where(c_sand_all <= Ww_max_sizes[5], c_sand_all, 0)
+    c_sand = np.delete(c_sand_all, np.where(c_sand_all==0))
+    vc_sand_all = np.where(diam > Ww_max_sizes[5], diam, 0)
+    vc_sand_all = np.where(vc_sand_all <= Ww_max_sizes[6], vc_sand_all, 0)
+    vc_sand = np.delete(vc_sand_all, np.where(vc_sand_all==0))
+    granules_all = np.where(diam > Ww_max_sizes[6], diam, 0)
+    granules_all = np.where(granules_all <= Ww_max_sizes[7], granules_all, 0)
+    granules = np.delete(granules_all, np.where(granules_all==0))
+    pebbles_all = np.where(diam > Ww_max_sizes[7], diam, 0)
+    pebbles_all = np.where(pebbles_all <= Ww_max_sizes[8], pebbles_all, 0)
+    pebbles = np.delete(pebbles_all, np.where(pebbles_all==0))
+    cobbles_all = np.where(diam > Ww_max_sizes[8], diam, 0)
+    cobbles = np.delete(cobbles_all, np.where(cobbles_all==0))
+    
+    grain_size_bins_all = [m_silt_all, c_silt_all, vf_sand_all, f_sand_all, m_sand_all, c_sand_all, vc_sand_all, granules_all, pebbles_all, cobbles_all]
+    grain_size_bins = [m_silt, c_silt, vf_sand, f_sand, m_sand, c_sand, vc_sand, granules, pebbles, cobbles]
+
+    
 
 ######## set up for number_of_impacts_plot(diameter_array, NumberOfImpactsByGS, scallop_length, x_array):
-    number_of_impacts=np.zeros_like(diam)
-    normalized_energies=np.zeros_like(diam)
-    averaged_travel_dist=np.zeros_like(diam)
-    for j in range(len(diam)):
-        GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
-        number_of_impacts[j] = len(GS)/(numScal*l32)
-        KE = Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7]!=0]
-        S = Deposition_Data[i][j, :, 0][Deposition_Data[i][j, :, 0]!=0]
-        if np.any(KE):
-            normalized_energies[j] = np.average(KE)
-        else:
-            normalized_energies[j] = 0
-        if np.any(S):
-            averaged_travel_dist[j] = np.average(S)
-        else:
-            averaged_travel_dist[j] = 0
+    
+    for k in range(len(grain_size_bins_all)):
+        ## impacts at locations plot
+        fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
+        axs.set_xlim(0, l32*20)
+        number_of_impacts_at_x = np.zeros_like(x0)
+        number_of_new_impacts_at_x = np.zeros_like(x0)
         
-    all_impact_numbers[i, :] = number_of_impacts
-    all_grains[i, :] = diam
-    all_avg_energies[i, :] = normalized_energies
-    all_avg_distances[i, :] = averaged_travel_dist
-    
-    ## impacts at locations plot
-    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    GetMaxEnergies = Impact_Data[i][:, :, 7][Impact_Data[i][:, :, 7] != 0]
-    ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
-    ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
-    ColorMax = np.ceil(np.max(ColorNumbers))
-    my_colors = cm.get_cmap('YlGn', 256)
-    # axs.set_xlim(0, int(number_of_scallops[i]*scallop_lengths[i]))
-    axs.set_xlim(0, 50)
-    axs.set_ylim(0, l32)
-    for j in range(len(diam)):
-        GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
-        initial_z_idxs = np.array(Impact_Data[i][j, :, 8][Impact_Data[i][j, :, 7] != 0], dtype = int)
-        impact_x = Impact_Data[i][j, :, 1][Impact_Data[i][j, :, 7] != 0]
-        findColors = (np.log10(Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7] != 0]))/ColorMax
-        axs.scatter(impact_x, Initial_Conditions[i][j, initial_z_idxs, 1] , c = my_colors(findColors), s = 50 * GS)
-    plt.fill_between(x0, z0/4, 0, alpha = 1, color = 'grey')
-    fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
-                        wspace=0.4, hspace=0.1)
-    axs.axvspan(0, 50, facecolor='mediumblue', zorder = 0)
-    plt.title('Particle impacts at each location by fall height on '+str(l32)+' cm Scallops')
-    cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
-    norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='YlGn'), cax = cb_ax)
-    cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)')
-    axs.set_xlabel('x (cm)')
-    axs.set_ylabel('fall height (cm)')
-    plt.show()
-
-    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    # GetMaxEnergies = Impact_Data[i][:, :, 7][Impact_Data[i][:, :, 7] != 0][Impact_Data[i][:, :, 1]>100]
-    GetMaxEnergies = Impact_Data[i][:, :, 7][Impact_Data[i][:, :, 7] != 0]
-    ColorScheme = np.log10(GetMaxEnergies)  ## define color scheme to be consistent for every plot
-    ColorNumbers = ColorScheme[np.logical_not(np.isnan(ColorScheme))] 
-    ColorMax = np.ceil(np.max(ColorNumbers))
-    my_colors = cm.get_cmap('cividis', 256)
-    axs.set_xlim(0, l32)
-    #axs.set_aspect('equal')
-    for j in range(len(diam)):
-        GS = Impact_Data[i][j, :, 5][Impact_Data[i][j, :, 7] != 0]
-        initial_z_idxs = np.array(Impact_Data[i][j, :, 8][Impact_Data[i][j, :, 7] != 0], dtype = int)
-        impact_x = Impact_Data[i][j, :, 1][Impact_Data[i][j, :, 7] != 0]
-        scallop_phase = impact_x % l32
-        findColors = (np.log10(Impact_Data[i][j, :, 7][Impact_Data[i][j, :, 7] != 0]))/ColorMax
-        axs.scatter(scallop_phase, GS*10 , c = my_colors(findColors))
-    # plt.fill_between(x0, z0 * 50/l32**2, 0, alpha = 1, color = 'grey')
-    #plt.contourf(new_X, new_Z, w_water, alpha = 1, vmin = -20, vmax = 20, cmap = 'seismic', zorder = 0)
-    fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
-                        wspace=0.4, hspace=0.1)
-    plt.title('Particle impacts by grain size on '+str(l32)+' cm scallops', fontsize = 18)
-    cb_ax = fig.add_axes([0.83, 0.1, 0.02, 0.8])
-    #cb2_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
-    norm = colors.Normalize(vmin = 0, vmax = ColorMax)
-    #norm2 = colors.Normalize(vmin = -20, vmax = 20)
-    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='cividis'), cax = cb_ax)
-    #plt.colorbar(cm.ScalarMappable(norm = norm2, cmap='seismic'), cax = cb2_ax)
-    cb_ax.set_ylabel('log10 of Kinetic energy of impact (ergs)', fontsize = 16)
-    #cb2_ax.set_ylabel('vertical component of water velocity (cm/s)')
-    axs.set_xlabel('x (cm)', fontsize = 16)
-    axs.set_ylabel('grain size (mm)', fontsize = 16)
-    
-    plt.show()
-
-#################comparing dissolution and abrasion
-cb_max = -3
-cb_tiny = -6
-cb =  7 * np.logspace(cb_tiny, cb_max, 4)
-
-for h in range(len(cb)):
-    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    erosion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1)))
-
-    for i in range(len(scallop_lengths)):
-        for j in range(len(diam)):
-            if np.any(Deposition_Data[i][j, :, 1]):
-                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   
-                total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
-                Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
-                if np.any(Abrasion_Rate):
-                    erosion_rates[i, j] = cb[h]*np.sum(Abrasion_Rate)/cb_sim
-            else:
-                erosion_rates[i,j]=0
-        axs.scatter(all_grains[i, :]*10, (erosion_rates[i, :]), label = '(abrasion * scallop length) on '+str(scallop_lengths[i])+' cm scallops')
-
-    axs.set_xlim(0.1, 110)
-    diss_min1 = (5*1.735*10**-8)  #minimum dissolution rate (mm/yr) (Grm et al., 2017) scaled for 1 cm scallops
-    diss_max1 = (5*4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)  scaled for 1 cm scallops
-    diss_min2 = (2*1.735*10**-8)  #minimum dissolution rate (mm/yr) (Grm et al., 2017) scaled for 2.5 cm scallops
-    diss_max2 = (2*4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)  scaled for 2.5 cm scallops
-    diss_min5 = (1.735*10**-8)  #minimum dissolution rate (mm/yr) (Grm et al., 2017)
-    diss_max5 = (4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)
-    diss_min10 = (0.5*1.735*10**-8)  #minimum dissolution rate (mm/yr) (Grm et al., 2017) scaled for 10 cm scallops
-    diss_max10 = (0.5*4*10**-8)  #maximum dissolution rate (mm/yr) (Hammer et al., 2011)  scaled for 10 cm scallops
-    
-    diss_min = [diss_min1, diss_min2, diss_min5, diss_min10]
-    diss_max = [diss_max1, diss_max2, diss_max5, diss_max10]
-
-
-    x = np.linspace(0.1, 110)
-    plt.fill_between(x, diss_min1, diss_max1, alpha = 0.4, color = 'dodgerblue', label = 'dissolutional range over 1 cm scallops')
-    plt.fill_between(x, diss_min2, diss_max2, alpha = 0.4, color = 'peru', label = 'dissolutional range over 2.5 cm scallops')
-    plt.fill_between(x, diss_min5, diss_max5, alpha = 0.4, color = 'cyan', label = 'dissolutional range over 5 cm scallops')
-    plt.fill_between(x, diss_min10, diss_max10, alpha = 0.4, color = 'gray', label = 'dissolutional range over 10 cm scallops')
-
-    # axs.set_ylim(0, 2 * diss_max1)
-    plt.semilogx()
-    #plt.legend(loc = 'upper left')
-    axs.set_title('Sediment Concentration =' +str(round(cb[h], 6)), fontsize = 18)
-    axs.set_xlabel('particle grainsize (mm)', fontsize = 16)
-    axs.set_ylabel('erosion rate (cm/s)', fontsize = 16)
-    axs.grid(True, which = 'both', axis = 'both')
-    
-    
-    plt.show()
-
-
-#################comparing dissolution and abrasion, bust out into four plots
-cb_max = 0.015
-cb_tiny = 7 * 10**-6
-cb = cb_max * np.logspace((np.log10(cb_tiny/cb_max)), 0, 51)
-
-abrasion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
-erosion_difference = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
-
-percent_change_max = [174800, 130700, 278900, 174800]
-hiding_size = [0, 0.05, 0.08, 0.1]
-x_min = [0.177, 0.4, 0.7, 0.9]
-
-
-for i in range(len(scallop_lengths)):
-    fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-    mean_dissolution = 0.5 * (diss_min[i] + diss_max[i])
-    ColorMax = np.ceil(100)
-    my_colors = cm.get_cmap('RdYlBu_r', 256)
-    
-    for j in range(len(all_grains[i, :])):
-        for k in range(len(cb)):
-            if np.any(Deposition_Data[i][j, :, 1]):
-                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   
-                total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
-                Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
-                if np.any(Abrasion_Rate):
-                    abrasion_rates[i, j, k] = cb[k]*np.sum(Abrasion_Rate)/cb_sim
-            else:
-                abrasion_rates[i,j, k]=0
-            erosion_difference[i,j,k] = ((abrasion_rates[i, j, k] - mean_dissolution)/mean_dissolution)*100
-
-            findColors = (erosion_difference[i,j,k])/ColorMax
+       
+        
+        for j in range(len(grain_size_bins_all[k])):
+            # new_impact_indices = np.where([Impact_Data[i][j, :, 7] != 0])[1]
             
-            if all_grains[i, j] < hiding_size[i]:
-                c = 'gainsboro'
-            # elif erosion_difference[i,j,k] < -39:
-            #     c = 'aqua'
-            # elif erosion_difference[i,j,k] > 39:
-            #     c = 'darkgoldenrod'
-            elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39:
-                c = 'yellow'
-            else:
-                c = my_colors(findColors)
-            axs.scatter((all_grains[i, j]*10), cb[k], color = c, marker = 's', s = 100) 
-
-    plt.semilogx()
-    plt.semilogy()
-    #axs.set_xlim(x_min[i], (np.max(all_grains[i,:]))*10)
-    axs.set_xlim(x_min[0], 100)
-    axs.set_title('Relative erosional processes over ' +str(scallop_lengths[i])+ '-cm scallops', fontsize = 18)
-    axs.set_xlabel('particle grainsize (mm)', fontsize = 16)
-    axs.set_ylabel('sediment concentration', fontsize = 16)
-    cb_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
-    norm = colors.Normalize(vmin = -ColorMax, vmax = ColorMax)
-    plt.colorbar(cm.ScalarMappable(norm = norm, cmap='RdYlBu_r'), cax = cb_ax)
-    cb_ax.set_ylabel('percent change abrasion to dissolution (cm/s)', fontsize = 16)
-    
-    plt.show()
-
-#################comparing dissolution and abrasion, bust out into four plots, grain sizes as ratios
-cb_max = 0.015
-cb_tiny = 7 * 10**-6
-cb = cb_max * np.logspace((np.log10(cb_tiny/cb_max)), 0, 51)
-
-abrasion_rates = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
-erosion_difference = np.zeros(shape = (len(scallop_lengths), len(Impact_Data1), len(cb)))
-
-percent_change_max = [174800, 130700, 278900, 174800]
-hiding_size = [0, 0.05, 0.08, 0.1]
-x_min = [0.177, 0.4, 0.7, 0.9]
-
-
-
-fig, axs = plt.subplots(nrows = 1, ncols = 1, figsize = (11,8.5))
-mean_dissolution = 0.5 * (diss_min[i] + diss_max[i])
-ColorMax = np.ceil(100)
-my_colors = cm.get_cmap('RdYlBu_r', 256)
-for i in range(len(scallop_lengths)):    
-    for j in range(len(all_grains[i, :])):
-        for k in range(len(cb)):
-            if np.any(Deposition_Data[i][j, :, 1]):
-                cb_sim = np.shape(Initial_Conditions1)[1]*np.pi*(all_grains[i,j])**2/(4*np.average(Deposition_Data[i][j, :, 1])*5000)   
-                total_elapsed_time = np.max(Impact_Data[i][j, :, 0])            
-                Abrasion_Rate = (Impact_Data[i][j, :, 9][Impact_Data[i][j, :, 6] < 0])/(total_elapsed_time)
-                if np.any(Abrasion_Rate):
-                    abrasion_rates[i, j, k] = cb[k]*np.sum(Abrasion_Rate)/cb_sim
-            else:
-                abrasion_rates[i,j, k]=0
-            erosion_difference[i,j,k] = ((abrasion_rates[i, j, k] - mean_dissolution)/mean_dissolution)*100
-
-            findColors = (erosion_difference[i,j,k])/ColorMax
+            new_impact_indices = (np.round((Impact_Data[i][j, np.where([Impact_Data[i][j, :, 7] != 0])[1], 1])/0.05, 0)).astype(int)
+            number_of_new_impacts_at_x[new_impact_indices] = 1
+            number_of_impacts_at_x += number_of_new_impacts_at_x
             
-            # if all_grains[i, j] < hiding_size[i]:
-            #     c = 'gainsboro'
-            # elif erosion_difference[i,j,k] < -39:
-            #     c = 'aqua'
-            # elif erosion_difference[i,j,k] > 39:
-            #     c = 'darkgoldenrod'
-            if erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39 and i == 0:
-                c = 'tab:red'
-                a = 1
-            elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39 and i == 1:
-                c = 'tab:blue'
-                a = 1
-            elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39 and i == 2:
-                c = 'tab:green'
-                a = 1
-            elif erosion_difference[i,j,k] > -39 and erosion_difference[i,j,k] < 39 and i == 3:
-                c = 'tab:purple'
-                a = 1
-            else:
-                c = '1'
-                a = 0
-            # else:
-            #     c = my_colors(findColors)
-            axs.scatter((all_grains[i, j]/scallop_lengths[i]), cb[k], color = c, marker = 's', s = 100, alpha = a) 
-
-plt.semilogx()
-plt.semilogy()
-#axs.set_xlim(x_min[i], (np.max(all_grains[i,:]))*10)
-#axs.set_xlim(x_min[0], 100)
-axs.set_title('Relative erosional processes over scallops', fontsize = 20)
-axs.set_xlabel('particle grainsize : scallop length', fontsize = 18)
-axs.set_ylabel('sediment concentration', fontsize = 18)
-cb_ax = fig.add_axes([0.93, 0.1, 0.02, 0.8])
-norm = colors.Normalize(vmin = -ColorMax, vmax = ColorMax)
-plt.colorbar(cm.ScalarMappable(norm = norm, cmap='RdYlBu_r'), cax = cb_ax)
-cb_ax.set_ylabel('percent change abrasion to dissolution (cm/s)', fontsize = 16)
-
-plt.show()
+            
+        plt.fill_between(x0, z0/4, 0, alpha = 1, color = 'grey')
+        plt.scatter(x0, number_of_impacts_at_x)
+        fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8,
+                            wspace=0.4, hspace=0.1)
+        plt.title('Number of particle impacts at each location of '+Wentworth[k]+' on '+str(l32)+' cm Scallops')
+        axs.set_xlabel('x (cm)')
+        axs.set_ylabel('number of impacts')
+        plt.show()
